@@ -1,0 +1,525 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily Poké Catch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Layout: one centered column on a night-route backdrop; tabs switch modes; Poké Ball colors encode difficulty. Single theme by choice. */
+:root{
+  color-scheme: light;
+  --night-top:#13235a; --night-bot:#2a4fa8;
+  --ink:#1b1d33; --ink-soft:#4a4f72;
+  --card:#fffaf0; --line:#e4dccb; --wash:#fff1d6;
+  --yellow:#ffcb05; --yellow-ink:#2a2000; --yellow-shadow:#c99a00;
+  --poke:#e3350d; --great:#2f6fe4; --ultra:#2a2a2e; --master:#7d3cc8;
+  --right:#2f9e57; --wrong:#d93b30;
+  --display:"Lilita One","Arial Rounded MT Bold","Trebuchet MS",sans-serif;
+  --body:"Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --cond:"Barlow Condensed","Arial Narrow",sans-serif;
+}
+html{background:#2a4fa8}
+html,body{min-height:100%}
+body{margin:0;background:var(--night-top);background-image:radial-gradient(circle at 20% 10%,rgba(255,255,255,.08) 0 2px,transparent 3px),radial-gradient(circle at 70% 30%,rgba(255,255,255,.06) 0 2px,transparent 3px),linear-gradient(180deg,var(--night-top) 0%,var(--night-bot) 75%,#3f6fd0 100%);
+  background-size:140px 140px,190px 190px,auto;background-attachment:fixed;
+  color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;padding-inline:16px;padding-block:20px 48px}
+.wrap{max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 16px;color:#fff}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(38px,9.5vw,60px);line-height:.95;margin:0;letter-spacing:.5px;color:var(--yellow);
+  -webkit-text-stroke:2px #1f4fae;paint-order:stroke fill;text-shadow:0 4px 0 #1f4fae,0 8px 18px rgba(0,10,40,.45)}
+h1 span{color:#fff}
+.date{font-family:var(--cond);font-weight:600;font-size:15px;text-transform:uppercase;letter-spacing:1.5px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{appearance:none;border:0;cursor:pointer;font-family:var(--display);font-size:17px;letter-spacing:.4px;
+  padding:9px 14px;border-radius:999px;background:rgba(255,255,255,.14);color:#fff}
+.tab[aria-selected="true"]{background:var(--yellow);color:var(--yellow-ink);box-shadow:0 3px 0 var(--yellow-shadow)}
+.tab:focus-visible{outline:3px solid #fff;outline-offset:2px}
+.panel{background:var(--card);border-radius:16px;box-shadow:0 6px 0 rgba(5,15,50,.35),0 14px 30px rgba(5,15,50,.3);padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel h2{font-family:var(--display);font-weight:400;font-size:28px;margin:0;letter-spacing:.3px;text-wrap:balance}
+.muted{color:var(--ink-soft);margin:0}
+.shareall{margin-top:22px;padding-top:16px;border-top:2px dashed var(--line)}.sa-title{font-weight:800;margin:0 0 8px}
+.estats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:14px 0}
+.estat{background:#fff;border:2px solid var(--line);border-radius:12px;padding:10px 12px}
+.estat b{display:block;font-family:var(--display);font-weight:400;font-size:30px;line-height:1.05}
+.estat span{font-size:13px;color:var(--ink-soft);font-weight:800;text-transform:uppercase;letter-spacing:.5px}
+.streak-fire{color:#e8932e}
+.ladder{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.diffs{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media (max-width:420px){.diffs{grid-template-columns:1fr}.tabs{display:grid;grid-template-columns:1fr 1fr}.tab{font-size:15px;padding:8px 6px;text-align:center}.tab:first-child{grid-column:1/-1}.tab:last-child:nth-child(even){grid-column:1/-1}}
+.diff{appearance:none;border:0;cursor:pointer;border-radius:14px;padding:14px 12px 14px 58px;text-align:left;color:#fff;font-family:var(--body);display:flex;flex-direction:column;gap:4px;min-width:0;transition:transform .12s;position:relative;overflow:hidden}
+.diff:hover{transform:translateY(-2px)} .diff:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+.diff .orb{position:absolute;left:12px;top:14px}
+.diff .lvl{font-family:var(--display);font-size:26px;line-height:1;letter-spacing:.3px}
+.diff .tier{font-family:var(--cond);font-weight:700;text-transform:uppercase;letter-spacing:1.4px;font-size:12px;opacity:.95}
+.diff .who{font-size:13.5px;line-height:1.3}
+.diff .done{font-family:var(--cond);font-weight:700;font-size:13px;background:rgba(0,0,0,.25);border-radius:4px;padding:2px 6px;align-self:flex-start;margin-top:4px}
+.d-e{background:linear-gradient(160deg,#ff6a45,var(--poke) 55%,#a52206)}
+.d-m{background:linear-gradient(160deg,#5c94ff,var(--great) 55%,#1a48a8)}
+.d-h{background:linear-gradient(160deg,#4a4a52,var(--ultra) 55%,#121214);color:#ffe066}
+.d-x{background:linear-gradient(160deg,#b27ef0,var(--master) 55%,#4c1d86)}
+.hud{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:5px;font-family:var(--cond);font-weight:700;text-transform:uppercase;letter-spacing:1.2px;font-size:13px;color:#fff;border-radius:999px;padding:3px 10px 3px 6px;white-space:nowrap}
+.chip.plain{padding:3px 10px}
+.c-e{background:var(--poke)} .c-m{background:var(--great)} .c-h{background:var(--ultra);color:#ffe066} .c-x{background:var(--master)}
+.c-who{background:#1f4fae}
+.era{font-family:var(--cond);font-weight:600;font-size:14px;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-soft)}
+.pips{display:flex;gap:5px;flex-wrap:wrap}
+.pip{width:14px;height:14px;border-radius:50%;background:var(--line);box-shadow:inset 0 -3px 0 rgba(0,0,0,.08)}
+.pip.cur{background:var(--ink)} .pip.ok{background:var(--right)} .pip.no{background:var(--wrong)}
+.q{font-size:20px;font-weight:800;line-height:1.3;margin:0;text-wrap:balance}
+.opts{display:grid;gap:8px}
+.opt{appearance:none;font:inherit;font-weight:700;text-align:left;cursor:pointer;background:#fff;color:var(--ink);border:2px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;gap:12px;align-items:center;transition:border-color .12s,background .12s}
+.opt:hover:not(:disabled){border-color:var(--great)} .opt:focus-visible{outline:3px solid var(--yellow);outline-offset:1px}
+.opt .k{font-family:var(--cond);font-weight:700;width:26px;height:26px;flex:none;display:grid;place-items:center;border-radius:50%;background:var(--line);font-size:14px}
+.opt:disabled{cursor:default}
+.opt.right{border-color:var(--right);background:#e5f6eb} .opt.right .k{background:var(--right);color:#fff}
+.opt.wrong{border-color:var(--wrong);background:#fdeceb} .opt.wrong .k{background:var(--wrong);color:#fff}
+.opt.dim{opacity:.55}
+.explain{border-left:4px solid var(--great);background:var(--wash);border-radius:0 10px 10px 0;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.explain p{margin:0}
+.verdict{font-family:var(--display);font-size:21px;letter-spacing:.3px}
+.src{font-family:var(--cond);font-weight:600;font-size:14px;color:var(--ink-soft)} .src a{color:#1a48a8}
+.btn{appearance:none;border:0;cursor:pointer;font-family:var(--display);font-size:20px;letter-spacing:.4px;background:var(--yellow);color:var(--yellow-ink);border-radius:999px;padding:11px 22px;box-shadow:0 4px 0 var(--yellow-shadow);transition:transform .08s}
+.btn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--yellow-shadow)} .btn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 2px var(--line)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.result-title{font-family:var(--display);font-size:clamp(30px,8vw,44px);line-height:1;margin:0}
+.score{font-family:var(--cond);font-weight:700;font-size:20px;font-variant-numeric:tabular-nums}
+.recap{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.recap li{display:flex;gap:10px;align-items:baseline;font-size:15px}
+.recap .m{font-weight:800;flex:none;width:18px} .recap .ok{color:var(--right)} .recap .no{color:var(--wrong)}
+.share{font-family:var(--cond);font-size:16px;background:#fff;border:2px dashed var(--line);border-radius:10px;padding:10px 12px;white-space:pre-wrap;margin:0;user-select:all}
+.toast{font-family:var(--cond);font-weight:600;color:var(--right)}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1 1 150px}
+.field label{font-family:var(--cond);font-weight:700;font-size:13px;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink-soft)}
+select,input[type=search]{font:inherit;font-size:15px;color:var(--ink);background:#fff;border:2px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0;width:100%;box-sizing:border-box}
+select:focus-visible,input:focus-visible{outline:3px solid var(--yellow);outline-offset:1px}
+.set-card{background:var(--wash);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.set-card .sub{font-family:var(--display);font-size:24px;line-height:1.05}
+.counts{display:flex;gap:6px;flex-wrap:wrap}
+.bank{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}
+.bq{border:2px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;background:#fff;min-width:0}
+.bq .top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.bq .id{font-family:var(--cond);font-weight:700;font-size:13px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.bq .qq{font-weight:800;margin:0}
+.bq .ans{margin:0;color:var(--right);font-weight:800}
+.bq .oth{margin:0;font-size:14px;color:var(--ink-soft)}
+.bq .ex{margin:0;font-size:14.5px}
+.more{align-self:center}
+.clue-head{font-family:var(--display);font-size:24px;letter-spacing:.3px;line-height:1;display:flex;align-items:center;gap:8px}
+.clue-head svg{flex:none}
+.clue{margin:0;background:#20232f;color:#fff;border-radius:12px;padding:14px 16px;font-size:18px;font-weight:700;line-height:1.45;box-shadow:inset 0 0 0 3px #3a3f57}
+.ver{margin:0 auto 10px;max-width:520px;font-size:13px}
+.ver span{font-family:var(--cond);font-weight:700;letter-spacing:.5px;display:inline-block;padding:4px 10px;border-radius:6px;background:rgba(0,0,0,.25)}
+.credit{display:inline-block;font-size:13px;opacity:.9;margin-bottom:8px}
+footer{color:#e9eeff;font-size:13px;text-align:center;text-shadow:0 1px 2px rgba(0,10,40,.5)}
+footer a{color:#fff}
+.syncbtn{appearance:none;border:0;cursor:pointer;font:inherit;font-weight:700;color:inherit;background:rgba(0,0,0,.25);border-radius:999px;padding:5px 14px;margin:6px 0 10px}
+.syncbtn:hover{background:rgba(0,0,0,.4)}
+.synccode{width:100%;box-sizing:border-box;min-height:90px;font:12px/1.4 ui-monospace,Menlo,monospace;padding:10px;border-radius:10px;border:2px solid var(--line);background:#fff;color:#1a2340;resize:vertical;word-break:break-all;margin:6px 0 10px}
+.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:1000}
+.vr{position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;padding:16px;
+  background:radial-gradient(circle at 50% 40%,#3a5bd0 0%,#1a2a78 45%,#070c2a 100%);animation:vrIn .35s ease-out}
+.vr.out{opacity:0;transition:opacity .25s}
+.vr-in{text-align:center;max-width:520px}
+.vr-num{font-family:var(--display);font-size:clamp(70px,22vw,130px);line-height:.9;color:#fff;text-shadow:0 6px 0 #1b2a6b,0 0 30px rgba(255,203,5,.6)}
+.vr-title{font-family:var(--display);font-size:clamp(42px,12vw,80px);line-height:.95;color:var(--yellow);-webkit-text-stroke:3px #1f4fae;paint-order:stroke fill;
+  filter:drop-shadow(0 5px 0 #0c2466);animation:vrPop .6s cubic-bezier(.2,1.6,.4,1) .1s both}
+.vr-sub{color:#e9eeff;font-weight:700;margin:14px 0 22px;font-size:17px}
+@keyframes vrIn{from{opacity:0}to{opacity:1}}
+@keyframes vrPop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+@media (prefers-reduced-motion:reduce){.vr,.vr-title{animation:none}*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Daily Poké <span>Catch</span></h1>
+    <div class="date" id="date"></div>
+  </header>
+  <nav class="tabs" role="tablist" aria-label="Game modes">
+    <button class="tab" role="tab" id="tab-main" data-v="main">Daily Catch</button>
+    <button class="tab" role="tab" id="tab-daily" data-v="daily">By Difficulty</button>
+    <button class="tab" role="tab" id="tab-seasons" data-v="seasons">Generations &amp; Topics</button>
+    <button class="tab" role="tab" id="tab-where" data-v="where">Who's That Pokémon?</button>
+    <button class="tab" role="tab" id="tab-endless" data-v="endless">Endless</button>
+    <button class="tab" role="tab" id="tab-bank" data-v="bank">Question Bank</button>
+  </nav>
+  <main id="app" class="panel" aria-live="polite"></main>
+  <footer>Questions come from Bulbapedia, the official Pokédex on pokemon.com, the Pokémon Fandom wiki and Wikipedia. Every answer links its source.<br><br>Daily Poké Catch is an unofficial fan game. Pokémon and all related names are trademarks of Nintendo, Game Freak, Creatures Inc. and The Pokémon Company. This site is not affiliated with or endorsed by them.<br><br><!--VERSION--><button class="syncbtn" id="syncBtn" type="button">Sync devices</button><br><span class="credit">Coded with Claude (Opus 5.5) by Anthropic</span></footer>
+</div>
+
+<script>
+const DATA=/*DATA*/null;
+const SRC={b:"https://bulbapedia.bulbagarden.net/wiki/",p:"https://www.pokemon.com/us/pokedex/",w:"https://en.wikipedia.org/wiki/",f:"https://pokemon.fandom.com/wiki/"};
+const Q=DATA.questions.map(q=>({...q,s:/^[bpwf]:/.test(q.s)?SRC[q.s[0]]+q.s.slice(2):q.s})), SEASONS=DATA.groups, SBY=Object.fromEntries(SEASONS.map(s=>[s.id,s]));
+const TIERS={e:{label:"Easy",tier:"Poké Ball",who:"For anyone who's watched an episode or two",key:"easy"},
+ m:{label:"Medium",tier:"Great Ball",who:"For trainers who've beaten a game",key:"medium"},
+ h:{label:"Hard",tier:"Ultra Ball",who:"For the ones with a full Pokédex",key:"hard"},
+ x:{label:"Impossible",tier:"Master Ball",who:"For Bulbapedia regulars",key:"master"}};
+const BALL={e:["#e3350d","#fff"],m:["#2f6fe4","#fff"],h:["#2a2a2e","#ffcb05"],x:["#7d3cc8","#fff"]};
+// Simple glossy orb in the tier's color, used as a difficulty marker.
+const orb=(t,s=16)=>`<svg class="orbi" width="${s}" height="${s}" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="${BALL[t][0]}" stroke="${BALL[t][1]}" stroke-width="1.6"/><ellipse cx="7.2" cy="6.6" rx="3" ry="2" fill="#fff" opacity=".55"/></svg>`;
+const PER_DAY=5, CHAPTERS=[...new Set(SEASONS.map(s=>s.ch))];
+const DAY0=Date.UTC(2026,9,21);
+
+const now=window.__NOW||new Date();
+const dayKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+// Day 0 is launch day (Oct 21, 2026); every later day picks up where the last one stopped.
+const dayNum=Math.abs(Math.floor((Date.UTC(now.getFullYear(),now.getMonth(),now.getDate())-DAY0)/864e5));
+document.getElementById("date").textContent=now.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+
+function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function shuffle(arr,r=Math.random){const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+const withOpts=(x,r)=>({...x,opts:shuffle([x.a,...x.w],r)});
+// Each tier has one rotation shared by By Difficulty and the Daily Catch: each day uses 5 slots
+// for By Difficulty, then the Daily Catch's share.
+const MAIN_MIX={e:1,m:1,h:2,x:1};
+const slotStart=(t,d)=>d*(PER_DAY+MAIN_MIX[t]);
+// Days that were already live when this version was published keep the exact questions they had.
+const PINNED=/*PIN*/{};
+const dateOf=dn=>new Date(DAY0+dn*864e5).toISOString().slice(0,10);
+const pinFor=dn=>PINNED[dateOf(dn)];
+// Planned days: question ids chosen at build time so nothing repeats until the bank runs out.
+const SCHED=/*SCHED*/{};
+const QBYID=Object.fromEntries(Q.map(q=>[q.id,q]));
+const schedFor=dn=>SCHED[dateOf(dn)];
+const fromIds=(ids,r)=>{const qs=ids.map(i=>QBYID[i]);return qs.every(Boolean)?qs.map(q=>withOpts(q,r)):null};
+function todays(t,per=PER_DAY,salt={e:11,m:23,h:37,x:53}[t],start=slotStart(t,dayNum),dn=dayNum){
+  {const p=pinFor(dn);if(p&&p[t]&&per===PER_DAY&&start===slotStart(t,dn))return p[t];}
+  {const sc=schedFor(dn);if(sc&&sc[t]&&per===PER_DAY&&start===slotStart(t,dn)){const r=fromIds(sc[t],rng(dn*131+salt));if(r)return r;}}
+  const pool=Q.filter(q=>q.t===t).sort((a,b)=>a.id<b.id?-1:1), L=pool.length, cache=[];
+  const perm=c=>{for(let k=cache.length;k<=c;k++){
+      if(k===0){cache.push(shuffle(pool.map((_,i)=>i),rng(salt)));continue}
+      const prev=cache[k-1],r=rng(k*97+salt),cut=[0,Math.round(L/3),Math.round(2*L/3),L];
+      cache.push([0,1,2].flatMap(s=>shuffle(prev.slice(cut[s],cut[s+1]),r)))}
+    return cache[c]};
+  const ids=[];for(let n=start;n<start+per;n++)ids.push(perm(Math.floor(n/L))[n%L]);
+  const r=rng(dn*131+salt);
+  return ids.map(i=>withOpts(pool[i],r));
+}
+// Daily Catch: 1 Easy, 1 Medium, 2 Hard, 1 Impossible, taken from the same rotation right after
+// that day's By Difficulty set, so the two never overlap or repeat each other.
+function mainSet(dn=dayNum){
+  {const p=pinFor(dn);if(p&&p.main)return p.main;}
+  {const sc=schedFor(dn);if(sc&&sc.main){const r=fromIds(sc.main,rng(dn*131+7));if(r)return r;}}
+  const out=[];
+  for(const t of Object.keys(MAIN_MIX))out.push(...todays(t,MAIN_MIX[t],undefined,slotStart(t,dn)+PER_DAY,dn));
+  return out;
+}
+const store={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const keyFor=t=>`pokecatch1:${dayKey}:${t}`;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const eraLabel=id=>{const s=SBY[id];if(!s)return"";return /^G\d$/.test(s.id)?`${s.name} · ${s.sub}`:`${s.ch} · ${s.sub}`};
+const srcLabel=u=>{const last=decodeURIComponent(u.split("/").pop()).replace(/_/g," ");
+  return u.includes("bulbapedia")?"Bulbapedia – "+last:u.includes("pokemon.com")?"Pokédex – "+last.replace(/-/g," "):u.includes("fandom")?"Pokémon Wiki – "+last:"Wikipedia – "+last};
+const srcLink=(u,cls,txt)=>`<a${cls?` class="${cls}"`:""} href="${esc(u)}" target="_blank" rel="noopener">${esc(txt||srcLabel(u))}</a>`;
+// Hide the group label when it would give the answer away: the answer names a generation, or
+// shares a word with the label that none of the wrong options share.
+const STOPW=new Set("the a an of and in on to for with at by from is was pokémon generation".split(" "));
+const wordsOf=x=>String(x).toLowerCase().replace(/[^a-zé0-9 ]/g," ").split(/\s+/).filter(w=>w.length>2&&!STOPW.has(w));
+function tagLeaks(q){const s=SBY[q.era];if(!s)return false;
+  if(/\bGeneration\b/.test(q.a))return true;
+  const lab=wordsOf(s.ch+" "+s.name+" "+s.sub),ov=wordsOf(q.a).filter(w=>lab.includes(w));
+  return ov.length>0&&!q.w.some(w=>wordsOf(w).some(x=>ov.includes(x)));}
+const chip=t=>`<span class="chip c-${t}">${orb(t,15)}${TIERS[t].tier} · ${TIERS[t].label}</span>`;
+
+const app=document.getElementById("app");
+const QMARK=`<svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#1f4fae"/><path d="M9.2 9.2a2.9 2.9 0 1 1 4.1 2.7c-.9.4-1.3 1-1.3 1.9v.6" fill="none" stroke="#ffcb05" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.4" fill="#ffcb05"/></svg>`;
+let S=null, view="daily";
+
+/* ---------- tabs ---------- */
+function setView(v){view=v;S=null;document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.v===v)));
+  ({main:mainView,daily:home,seasons:seasonsView,where:whereView,endless:endlessView,bank:bankView})[v]();window.scrollTo({top:0})}
+window.setView=setView;
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>setView(b.dataset.v));
+
+/* ---------- daily catch ---------- */
+function mainView(){
+  const qs=mainSet(), done=store.get(keyFor("main"));
+  if(done&&done.ids&&done.ids.join()===qs.map(q=>q.id).join()){S={mode:"main",title:"Daily Catch",qs,i:0,marks:done.marks};return results()}
+  app.innerHTML=`<h2>Today's Daily Catch</h2><p class="muted">Five questions that climb from Poké Ball to Master Ball, one throw each. Everyone gets the same set, and it resets at midnight your time.</p>
+   <div class="ladder">${qs.map(q=>chip(q.t)).join("")}</div>
+   <div class="row" style="margin-top:16px"><button class="btn" id="go">Throw!</button></div>
+   <p class="muted" style="margin-top:14px;font-size:14px">Want more? Each difficulty has its own five-question daily under By Difficulty.</p>`;
+  document.getElementById("go").onclick=()=>{S={mode:"main",title:"Daily Catch",qs,i:0,marks:[]};question()};
+}
+/* ---------- daily by difficulty ---------- */
+function home(){
+  app.innerHTML=`<h2>Pick your Poké Ball</h2><p class="muted">Five questions a day per difficulty, one throw each. New questions at midnight your time.</p>
+  <div class="diffs">${Object.keys(TIERS).map(t=>{const m=TIERS[t],done=store.get(keyFor(t));
+   return `<button class="diff d-${t}" id="pick-${t}" data-t="${t}"><span class="orb">${orb(t,34)}</span><span class="tier">${m.tier}</span><span class="lvl">${m.label}</span><span class="who">${m.who}</span><span class="who">${Q.filter(q=>q.t===t).length.toLocaleString()} questions in rotation</span>${done?`<span class="done">Played today · ${done.marks.filter(Boolean).length}/${PER_DAY}</span>`:""}</button>`}).join("")}</div>`;
+  app.insertAdjacentHTML("beforeend",shareAllBlock());wireShareAll();
+  app.querySelectorAll(".diff").forEach(b=>b.onclick=()=>startDaily(b.dataset.t));
+}
+function startDaily(t){
+  const done=store.get(keyFor(t));
+  S={mode:"daily",t,qs:todays(t),i:0,marks:[]};
+  if(done&&done.ids&&done.ids.join()===S.qs.map(q=>q.id).join()){S.marks=done.marks;return results()}
+  question();
+}
+/* ---------- shared play loop ---------- */
+function hud(){const label=S.mode==="daily"?chip(S.t):`<span class="chip plain c-who">${esc(S.title)}</span>`;
+  return `<div class="hud">${label}<div class="pips" aria-label="Question ${S.i+1} of ${S.qs.length}">${S.qs.map((_,k)=>`<span class="pip ${k<S.marks.length?(S.marks[k]?"ok":"no"):k===S.i?"cur":""}"></span>`).join("")}</div></div>`}
+const qBody=q=>q.clue?`<span class="clue-head">${QMARK}Who's that Pokémon?</span><p class="clue">${esc(q.q)}</p>`:`<p class="q">${esc(q.q)}</p>`;
+function question(){
+  const q=S.qs[S.i];
+  app.innerHTML=hud()+(q.era&&!q.clue&&!tagLeaks(q)?`<span class="era">${esc(eraLabel(q.era))}</span>`:"")+
+   (S.mode!=="daily"?`<div>${chip(q.t)}</div>`:"")+qBody(q)+
+   `<div class="opts">${q.opts.map((o,k)=>`<button class="opt" id="opt-${k}" data-o="${esc(o)}"><span class="k">${"ABCD"[k]}</span><span>${esc(o)}</span></button>`).join("")}</div><div id="after"></div>`;
+  app.querySelectorAll(".opt").forEach(b=>b.onclick=()=>answer(b));
+}
+function answer(btn){
+  const q=S.qs[S.i], ok=btn.dataset.o===q.a;S.marks.push(ok);
+  app.querySelectorAll(".opt").forEach(b=>{b.disabled=true;if(b.dataset.o===q.a)b.classList.add("right");else if(b===btn)b.classList.add("wrong");else b.classList.add("dim")});
+  app.querySelector(".hud").outerHTML=hud();
+  const last=S.i===S.qs.length-1;
+  document.getElementById("after").innerHTML=`<div class="explain" style="border-color:${ok?"var(--right)":"var(--wrong)"}">
+    <span class="verdict" style="color:${ok?"var(--right)":"var(--wrong)"}">${ok?"Gotcha!":"Oh no! It broke free!"}</span>
+    <p>${esc(q.e)}</p><span class="src">${esc(q.id)} · Source: ${srcLink(q.s)}</span></div>
+    <div class="row" style="margin-top:12px"><button class="btn" id="next">${last?"See results":"Next question"}</button></div>`;
+  const nb=document.getElementById("next");
+  nb.onclick=()=>{if(last){if(S.mode==="daily")store.set(keyFor(S.t),{marks:S.marks,ids:S.qs.map(x=>x.id)});if(S.mode==="main")store.set(keyFor("main"),{marks:S.marks,ids:S.qs.map(x=>x.id)});if(S.mode==="main"&&window.catchDone)try{window.catchDone(S.marks,S.qs.map(x=>x.id))}catch(e){}results(true)}else{S.i++;question()}};
+  nb.focus();
+}
+function rank(n,total){const p=n/total;return p===1?"Perfect catch!":p>=.8?"Elite Four material":p>=.6?"Gym Leader level":p>=.4?"Ace Trainer":p>0?"Youngster in training":"It got away..."}
+// Everything played today, in order: Daily Catch, then Easy, Medium, Hard, Impossible.
+function shareAllText(){
+  const rows=[["main","Daily Catch"],...Object.keys(TIERS).map(t=>[t,`${TIERS[t].label} (${TIERS[t].tier})`])]
+    .map(([k,label])=>{const d=store.get(keyFor(k));if(!d||!d.marks)return null;
+      return {label,n:d.marks.filter(Boolean).length,total:d.marks.length,grid:d.marks.map(x=>x?"🟢":"🔴").join("")}}).filter(Boolean);
+  if(rows.length<2)return null;
+  const n=rows.reduce((a,r)=>a+r.n,0),t=rows.reduce((a,r)=>a+r.total,0);
+  return `Daily Poké Catch ${dayKey}\n`+rows.map(r=>`${r.label} ${r.n}/${r.total}\n${r.grid}`).join("\n")+`\nTotal ${n}/${t}`;
+}
+function copyText(text,toastId,fallbackEl){const t=document.getElementById(toastId);
+  navigator.clipboard.writeText(text).then(()=>t.textContent="Copied").catch(()=>{if(fallbackEl){const r=document.createRange();r.selectNodeContents(fallbackEl);const sel=getSelection();sel.removeAllRanges();sel.addRange(r);t.textContent="Selected; press Ctrl/Cmd+C"}else t.textContent="Couldn't copy"})}
+function shareAllBlock(){const txt=shareAllText();if(!txt)return "";
+  const played=(txt.split("\n").length-2)/2===5;
+  return `<div class="shareall"><p class="sa-title">${played?"All five done today!":"Share everything you've played today"}</p><pre class="share" id="share-all">${esc(txt)}</pre>
+   <div class="row"><button class="btn" id="copy-all">Share all results</button><span class="toast" id="toast-all"></span></div></div>`}
+function wireShareAll(){const b=document.getElementById("copy-all");if(b)b.onclick=()=>copyText(shareAllText(),"toast-all",document.getElementById("share-all"))}
+
+// ---- Celebrations: confetti for any perfect set, a Pokémon Master screen for 25/25 across all of today's sets ----
+const REDUCED=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+function confetti(ms=2600,count=170){
+  if(REDUCED)return;
+  const c=document.createElement("canvas");c.className="confetti";document.body.appendChild(c);
+  const x=c.getContext("2d"),dpr=window.devicePixelRatio||1;
+  const size=()=>{c.width=innerWidth*dpr;c.height=innerHeight*dpr;x.setTransform(dpr,0,0,dpr,0,0)};size();addEventListener("resize",size);
+  const cols=["#ffcb05","#2f6fe4","#e3350d","#7d3cc8","#2f9e57","#ffffff","#ff8a3d"];
+  const P=Array.from({length:count},()=>({x:innerWidth*(.2+Math.random()*.6),y:innerHeight*.35+Math.random()*40,
+    vx:(Math.random()-.5)*11,vy:-(7+Math.random()*9),w:6+Math.random()*7,h:9+Math.random()*9,r:Math.random()*6,vr:(Math.random()-.5)*.35,
+    c:cols[Math.random()*cols.length|0],round:Math.random()<.35}));
+  const t0=performance.now();
+  (function frame(t){const el=t-t0;x.clearRect(0,0,innerWidth,innerHeight);
+    for(const p of P){p.vy+=.28;p.vx*=.99;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;
+      x.save();x.globalAlpha=Math.max(0,1-Math.max(0,el-ms+700)/700);x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;
+      if(p.round){x.beginPath();x.arc(0,0,p.w/2,0,7);x.fill()}else x.fillRect(-p.w/2,-p.h/2,p.w,p.h*Math.abs(Math.cos(p.r*2)));x.restore()}
+    if(el<ms)requestAnimationFrame(frame);else{removeEventListener("resize",size);c.remove()}})(t0);
+}
+const allPerfectToday=()=>["main","e","m","h","x"].every(k=>{const d=store.get(keyFor(k));return d&&d.marks&&d.marks.length&&d.marks.every(Boolean)});
+function victory(){
+  const o=document.createElement("div");o.className="vr";o.setAttribute("role","dialog");o.setAttribute("aria-label","Pokémon Master");o.tabIndex=-1;
+  o.innerHTML=`<div class="vr-in"><div class="vr-num">25/25</div><div class="vr-title">Pokémon Master!</div>
+    <p class="vr-sub">Every Daily Poké Catch set perfect today</p><button class="btn" id="vr-ok">Continue</button></div>`;
+  document.body.appendChild(o);o.focus();
+  const close=()=>{o.classList.add("out");setTimeout(()=>o.remove(),250);removeEventListener("keydown",esc_)};
+  const esc_=e=>{if(e.key==="Escape")close()};addEventListener("keydown",esc_);
+  o.onclick=e=>{if(e.target===o||e.target.id==="vr-ok")close()};
+  confetti(4200,260);setTimeout(()=>confetti(3200,180),900);
+}
+function celebrate(dailyish){if(dailyish&&allPerfectToday())return victory();confetti()}
+function results(fresh){
+  const n=S.marks.filter(Boolean).length,total=S.qs.length,grid=S.marks.map(x=>x?"🟢":"🔴").join("");
+  const title=S.mode==="daily"?`${TIERS[S.t].label} (${TIERS[S.t].tier})`:S.title;
+  const share=`Daily Poké Catch ${dayKey}\n${title} ${n}/${total}\n${grid}`;
+  app.innerHTML=`<div class="hud">${S.mode==="daily"?chip(S.t):`<span class="chip plain c-who">${esc(S.title)}</span>`}<span class="score">${n}/${total}</span></div>
+   <p class="result-title" style="color:${n===total?"var(--master)":"var(--ink)"}">${rank(n,total)}</p>
+   <ul class="recap">${S.qs.map((q,k)=>`<li><span class="m ${S.marks[k]?"ok":"no"}">${S.marks[k]?"✓":"✗"}</span><span>${q.clue?"Who's that Pokémon? ":""}${esc(q.q)} <strong>${esc(q.a)}</strong> · ${srcLink(q.s,"src","source")}</span></li>`).join("")}</ul>
+   <pre class="share" id="share">${esc(share)}</pre>
+   <div class="row"><button class="btn" id="copy">Copy result</button>${S.mode!=="daily"&&S.mode!=="main"?`<button class="btn ghost" id="again">${S.mode==="where"?"Play 10 more":"Play this set again"}</button>`:""}<button class="btn ghost" id="back">${S.mode==="main"?"Play by difficulty":S.mode==="daily"?"Try another difficulty":S.mode==="where"?"Back to Who's That Pokémon?":"Pick another set"}</button><span class="toast" id="toast"></span></div>${S.mode==="daily"||S.mode==="main"?shareAllBlock():""}`;
+  wireShareAll();
+  document.getElementById("back").onclick=()=>setView(S.mode==="main"||S.mode==="daily"?"daily":S.mode==="where"?"where":"seasons");
+  const again=document.getElementById("again");if(again)again.onclick=()=>S.mode==="where"?startWhere(S.size,S.filter):startSeason(S.filter,S.size);
+  if(fresh&&total>0&&n===total)celebrate(S.mode==="main"||S.mode==="daily");
+  document.getElementById("copy").onclick=()=>copyText(share,"toast",document.getElementById("share"));
+}
+
+/* ---------- generations & topics ---------- */
+let pick={ch:"Pokémon by Generation",s:"G1"};
+try{const p=JSON.parse(localStorage.getItem("pokecatch:pick"));if(p&&p.ch&&(p.ch==="all"||CHAPTERS.includes(p.ch)))pick=p}catch(e){}
+const inSet=(q,f)=>f.s!=="all"?q.era===f.s:(f.ch==="all"?true:SBY[q.era].ch===f.ch);
+function seasonOptions(ch,sel,allLabel){const list=SEASONS.filter(s=>ch==="all"||s.ch===ch);
+  return `<option value="all"${sel==="all"?" selected":""}>${allLabel}</option>`+list.map(s=>`<option value="${s.id}"${s.id===sel?" selected":""}>${esc(/^G\d$/.test(s.id)?s.name+" – "+s.sub:s.sub)}</option>`).join("")}
+function chapterOptions(sel,allLabel){return `<option value="all"${sel==="all"?" selected":""}>${allLabel}</option>`+CHAPTERS.map(c=>`<option${c===sel?" selected":""}>${esc(c)}</option>`).join("")}
+const allLbl=c=>c==="all"?"Everything":c==="Pokémon by Generation"?"Every generation":"Every topic here";
+function seasonsView(){
+  app.innerHTML=`<h2>Generations &amp; Topics</h2><p class="muted">Pick a generation to quiz yourself on its Pokémon, or a topic like Gyms, towns, the anime or the type chart. These questions also turn up in the daily games.</p>
+  <div class="row"><div class="field"><label for="ch-sel">Category</label><select id="ch-sel">${chapterOptions(pick.ch,"All categories")}</select></div>
+  <div class="field"><label for="s-sel">Set</label><select id="s-sel">${seasonOptions(pick.ch,pick.s,allLbl(pick.ch))}</select></div></div>
+  <div class="field"><label for="s-tier">Difficulty</label><select id="s-tier"><option value="all">Any difficulty</option>${Object.keys(TIERS).map(t=>`<option value="${t}"${pick.t===t?" selected":""}>${TIERS[t].label} (${TIERS[t].tier})</option>`).join("")}</select></div>
+  <div id="s-info"></div>`;
+  const ch=document.getElementById("ch-sel"),ss=document.getElementById("s-sel"),st=document.getElementById("s-tier");
+  ch.onchange=()=>{pick={ch:ch.value,s:"all",t:pick.t};ss.innerHTML=seasonOptions(pick.ch,"all",allLbl(pick.ch));info()};
+  ss.onchange=()=>{pick.s=ss.value;info()};
+  st.onchange=()=>{pick.t=st.value;info()};
+  info();
+}
+const pickSet=f=>Q.filter(q=>inSet(q,f)&&(!f.t||f.t==="all"||q.t===f.t)&&!q.clue);
+function info(){
+  try{localStorage.setItem("pokecatch:pick",JSON.stringify(pick))}catch(e){}
+  const set=pickSet(pick),s=SBY[pick.s];
+  const counts=Object.keys(TIERS).map(t=>{const n=set.filter(q=>q.t===t).length;return n?`<span class="chip c-${t}">${orb(t,14)}${n.toLocaleString()} ${TIERS[t].label}</span>`:""}).join("");
+  document.getElementById("s-info").innerHTML=`<div class="set-card">
+   ${s?`<span class="era">${esc(s.ch)}</span><span class="sub">${esc(/^G\d$/.test(s.id)?s.name+" · "+s.sub:s.sub)}</span><span class="src"><a href="${esc(s.url)}" target="_blank" rel="noopener">Read about it on Bulbapedia</a></span>`
+     :`<span class="sub">${esc(pick.ch==="all"?"Every category":pick.ch)}</span>`}
+   <span class="muted">${set.length.toLocaleString()} questions</span><div class="counts">${counts}</div></div>
+   <div class="row"><button class="btn" id="play10"${set.length?"":" disabled"}>Play ${Math.min(10,set.length)}</button>${set.length>10&&set.length<=40?`<button class="btn ghost" id="playall">Play all ${set.length}</button>`:""}</div>`;
+  document.getElementById("play10").onclick=()=>startSeason({...pick},10);
+  const pa=document.getElementById("playall");if(pa)pa.onclick=()=>startSeason({...pick},set.length);
+}
+function startSeason(f,size){
+  const s=SBY[f.s],set=pickSet(f);
+  const title=s?(/^G\d$/.test(s.id)?s.name:s.sub):(f.ch==="all"?"Everything":f.ch);
+  S={mode:"season",filter:f,size,title,qs:shuffle(set).slice(0,size).map(q=>withOpts(q)),i:0,marks:[]};
+  question();
+}
+
+/* ---------- who's that pokémon? ---------- */
+const WHOQ=Q.filter(q=>q.kind==="who");
+let wpick={g:"all",t:"all"};
+function whereView(){
+  const gens=SEASONS.filter(s=>/^G\d$/.test(s.id));
+  app.innerHTML=`<span class="clue-head">${QMARK}Who's That Pokémon?</span>
+  <p class="muted">Read the Pokédex-style clue and name the Pokémon. Every Pokémon from Bulbasaur to Pecharunt has a clue, and they also turn up in the daily games.</p>
+  <div class="row"><div class="field"><label for="w-gen">Generation</label><select id="w-gen"><option value="all">Every generation</option>${gens.map(g=>`<option value="${g.id}"${wpick.g===g.id?" selected":""}>${esc(g.name+" – "+g.sub)}</option>`).join("")}</select></div>
+  <div class="field"><label for="w-tier">Difficulty</label><select id="w-tier"><option value="all">Any difficulty</option>${Object.keys(TIERS).map(t=>`<option value="${t}"${wpick.t===t?" selected":""}>${TIERS[t].label} (${TIERS[t].tier})</option>`).join("")}</select></div></div>
+  <div class="set-card" id="w-info"></div>
+  <div class="row"><button class="btn" id="where10">Play 10</button></div>`;
+  const g=document.getElementById("w-gen"),t=document.getElementById("w-tier");
+  const upd=()=>{const set=whoSet(wpick);document.getElementById("w-info").innerHTML=`<span class="sub">${set.length.toLocaleString()} Pokémon clues</span><div class="counts">${Object.keys(TIERS).map(k=>{const n=set.filter(q=>q.t===k).length;return n?`<span class="chip c-${k}">${orb(k,14)}${n} ${TIERS[k].label}</span>`:""}).join("")}</div>`;document.getElementById("where10").disabled=!set.length};
+  g.onchange=()=>{wpick.g=g.value;upd()};t.onchange=()=>{wpick.t=t.value;upd()};upd();
+  document.getElementById("where10").onclick=()=>startWhere(10,{...wpick});
+}
+const whoSet=f=>WHOQ.filter(q=>(f.g==="all"||q.era===f.g)&&(f.t==="all"||q.t===f.t));
+function startWhere(size,f=wpick){S={mode:"where",size,filter:f,title:"Who's That Pokémon?",qs:shuffle(whoSet(f)).slice(0,size).map(q=>withOpts(q)),i:0,marks:[]};question()}
+
+/* ---------- endless ---------- */
+const EKEY="pokecatch:endless";
+const eStats=()=>Object.assign({best:0,right:0,total:0},store.get(EKEY)||{});
+let eTier="all";
+function endlessView(){
+  const st=eStats();
+  app.innerHTML=`<h2>Endless</h2><p class="muted">Questions keep coming until you stop. Build a streak; one miss resets it. Nothing repeats until you've seen every question in your pick.</p>
+   <div class="estats"><div class="estat"><span>Best streak</span><b>${st.best}</b></div><div class="estat"><span>All-time</span><b>${st.right}/${st.total}</b></div><div class="estat"><span>Accuracy</span><b>${st.total?Math.round(100*st.right/st.total)+"%":"–"}</b></div></div>
+   <div class="field"><label for="e-tier">Difficulty</label><select id="e-tier"><option value="all">Mixed (every difficulty)</option>${Object.keys(TIERS).map(t=>`<option value="${t}"${eTier===t?" selected":""}>${TIERS[t].label} (${TIERS[t].tier})</option>`).join("")}</select></div>
+   <div class="row" style="margin-top:14px"><button class="btn" id="e-go">Start</button>${st.total?`<button class="btn ghost" id="e-reset">Reset stats</button>`:""}</div>`;
+  const sel=document.getElementById("e-tier");sel.value=eTier;sel.onchange=()=>eTier=sel.value;
+  document.getElementById("e-go").onclick=()=>{const pool=Q.filter(q=>eTier==="all"||q.t===eTier);
+    S={mode:"endless",pool,deck:shuffle(pool),i:0,streak:0,right:0,total:0,best:eStats().best};endlessQ()};
+  const r=document.getElementById("e-reset");if(r)r.onclick=()=>{if(confirm("Reset your Endless stats?")){store.set(EKEY,{best:0,right:0,total:0});endlessView()}};
+}
+function endlessHud(){return `<div class="hud"><span class="chip plain c-who">Endless</span><span class="score">${S.streak>=3?`<span class="streak-fire">🔥 </span>`:""}Streak ${S.streak} · ${S.right}/${S.total}</span></div>`}
+function endlessQ(){
+  if(S.i>=S.deck.length){S.deck=shuffle(S.pool);S.i=0}
+  const q=withOpts(S.deck[S.i]);S.cur=q;
+  app.innerHTML=endlessHud()+(q.era&&!q.clue&&!tagLeaks(q)?`<span class="era">${esc(eraLabel(q.era))}</span>`:"")+`<div>${chip(q.t)}</div>`+qBody(q)+
+   `<div class="opts">${q.opts.map((o,k)=>`<button class="opt" data-o="${esc(o)}"><span class="k">${"ABCD"[k]}</span><span>${esc(o)}</span></button>`).join("")}</div><div id="after"></div>`;
+  app.querySelectorAll(".opt").forEach(b=>b.onclick=()=>endlessAnswer(b));
+}
+function endlessAnswer(btn){
+  const q=S.cur,ok=btn.dataset.o===q.a;
+  app.querySelectorAll(".opt").forEach(b=>{b.disabled=true;if(b.dataset.o===q.a)b.classList.add("right");else if(b===btn)b.classList.add("wrong");else b.classList.add("dim")});
+  const lost=S.streak;S.total++;if(ok){S.right++;S.streak++}else S.streak=0;S.i++;
+  const st=eStats();st.total++;if(ok)st.right++;const newBest=S.streak>st.best;if(newBest)st.best=S.streak;store.set(EKEY,st);
+  app.querySelector(".hud").outerHTML=endlessHud();
+  document.getElementById("after").innerHTML=`<div class="explain" style="border-color:${ok?"var(--right)":"var(--wrong)"}">
+    <span class="verdict" style="color:${ok?"var(--right)":"var(--wrong)"}">${ok?(newBest&&S.streak>1?"New best streak!":"Gotcha!"):(lost>=3?`Streak over at ${lost}.`:"Oh no! It broke free!")}</span>
+    <p>${esc(q.e)}</p><span class="src">${esc(q.id)} · Source: ${srcLink(q.s)}</span></div>
+    <div class="row" style="margin-top:12px"><button class="btn" id="next">Next question</button><button class="btn ghost" id="stop">Stop</button></div>`;
+  const nb=document.getElementById("next");nb.onclick=endlessQ;nb.focus();
+  document.getElementById("stop").onclick=endlessEnd;
+}
+function endlessEnd(){
+  const st=eStats(),share=`Daily Poké Catch Endless\n${S.right}/${S.total} right · best streak ${st.best}`;
+  app.innerHTML=`<div class="hud"><span class="chip plain c-who">Endless</span><span class="score">${S.right}/${S.total}</span></div>
+   <p class="result-title">${S.total?Math.round(100*S.right/S.total):0}% this run</p>
+   <div class="estats"><div class="estat"><span>This run</span><b>${S.right}/${S.total}</b></div><div class="estat"><span>Best streak</span><b>${st.best}</b></div><div class="estat"><span>All-time</span><b>${st.right}/${st.total}</b></div></div>
+   <pre class="share" id="share">${esc(share)}</pre>
+   <div class="row"><button class="btn" id="copy">Copy result</button><button class="btn ghost" id="again">Keep going</button><button class="btn ghost" id="back">Back</button><span class="toast" id="toast"></span></div>`;
+  document.getElementById("copy").onclick=()=>copyText(share,"toast",document.getElementById("share"));
+  document.getElementById("again").onclick=endlessQ;
+  document.getElementById("back").onclick=()=>setView("endless");
+}
+
+/* ---------- question bank ---------- */
+let bf={text:"",t:"all",ch:"all",s:"all",src:"all",kind:"all",shown:60};
+function bankView(){
+  app.innerHTML=`<h2>Question Bank</h2><p class="muted">Every question with its answer, the other options and its source, for checking by hand. Use the ID (like G1-004) to point out one that needs fixing.</p>
+  <div class="row"><div class="field" style="flex-basis:100%"><label for="b-text">Search</label><input type="search" id="b-text" placeholder="Search questions, answers or IDs" value="${esc(bf.text)}"></div></div>
+  <div class="row">
+   <div class="field"><label for="b-tier">Difficulty</label><select id="b-tier"><option value="all">All</option>${Object.keys(TIERS).map(t=>`<option value="${t}"${bf.t===t?" selected":""}>${TIERS[t].label} (${TIERS[t].tier})</option>`).join("")}</select></div>
+   <div class="field"><label for="b-ch">Category</label><select id="b-ch">${chapterOptions(bf.ch,"All")}</select></div>
+   <div class="field"><label for="b-s">Set</label><select id="b-s"${bf.ch==="all"?" disabled":""}>${seasonOptions(bf.ch,bf.s,"All")}</select></div>
+   <div class="field"><label for="b-kind">Type</label><select id="b-kind"><option value="all">All</option><option value="trivia"${bf.kind==="trivia"?" selected":""}>Trivia</option><option value="who"${bf.kind==="who"?" selected":""}>Who's That Pokémon?</option></select></div>
+   <div class="field"><label for="b-src">Source</label><select id="b-src"><option value="all">All</option><option value="b"${bf.src==="b"?" selected":""}>Bulbapedia</option><option value="p"${bf.src==="p"?" selected":""}>Pokédex (pokemon.com)</option><option value="w"${bf.src==="w"?" selected":""}>Wikipedia</option><option value="f"${bf.src==="f"?" selected":""}>Pokémon Fandom</option></select></div>
+  </div><p class="muted" id="b-count"></p><ul class="bank" id="b-list"></ul>`;
+  const t=document.getElementById("b-text");let timer;
+  t.oninput=()=>{clearTimeout(timer);timer=setTimeout(()=>{bf.text=t.value;bf.shown=60;renderBank()},150)};
+  document.getElementById("b-tier").onchange=e=>{bf.t=e.target.value;bf.shown=60;renderBank()};
+  document.getElementById("b-ch").onchange=e=>{bf.ch=e.target.value;bf.s="all";bf.shown=60;const s=document.getElementById("b-s");
+    s.innerHTML=seasonOptions(bf.ch,"all","All");s.disabled=bf.ch==="all";renderBank()};
+  document.getElementById("b-s").onchange=e=>{bf.s=e.target.value;bf.shown=60;renderBank()};
+  document.getElementById("b-src").onchange=e=>{bf.src=e.target.value;bf.shown=60;renderBank()};
+  document.getElementById("b-kind").onchange=e=>{bf.kind=e.target.value;bf.shown=60;renderBank()};
+  renderBank();
+}
+const srcKind=u=>u.includes("bulbapedia")?"b":u.includes("pokemon.com")?"p":u.includes("wikipedia")?"w":"f";
+function renderBank(){
+  const txt=bf.text.trim().toLowerCase();
+  const list=Q.filter(q=>(bf.t==="all"||q.t===bf.t)
+    &&(bf.ch==="all"||SBY[q.era].ch===bf.ch)
+    &&(bf.s==="all"||q.era===bf.s)
+    &&(bf.src==="all"||srcKind(q.s)===bf.src)
+    &&(bf.kind==="all"||(bf.kind==="who")===(q.kind==="who"))
+    &&(!txt||[q.id,q.q,q.a,...q.w,q.e].join(" ").toLowerCase().includes(txt)));
+  document.getElementById("b-count").textContent=`Showing ${Math.min(bf.shown,list.length).toLocaleString()} of ${list.length.toLocaleString()} matching questions (${Q.length.toLocaleString()} in total).`;
+  document.getElementById("b-list").innerHTML=list.slice(0,bf.shown).map(q=>`<li class="bq">
+    <div class="top"><span class="id">${esc(q.id)}</span>${chip(q.t)}${q.kind==="who"?`<span class="chip plain c-who">Who's That Pokémon?</span>`:""}<span class="era">${esc(eraLabel(q.era))}</span></div>
+    <p class="qq">${q.clue?"Who's that Pokémon? ":""}${esc(q.q)}</p><p class="ans">✓ ${esc(q.a)}</p><p class="oth">Other options: ${q.w.map(esc).join(" · ")}</p>
+    <p class="ex">${esc(q.e)}</p><span class="src">Source: ${srcLink(q.s)}</span></li>`).join("")+
+    (list.length>bf.shown?`<li class="more"><button class="btn ghost" id="b-more">Show 60 more</button></li>`:"");
+  const m=document.getElementById("b-more");if(m)m.onclick=()=>{bf.shown+=60;renderBank()};
+}
+
+// ---- Sync devices: progress lives in this browser, so move it with a copy/paste code ----
+function syncKeys(){const o={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith("pokecatch"))o[k]=localStorage.getItem(k)}}catch(e){}return o}
+function syncView(){
+  S=null;document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected","false"));
+  const code=btoa(unescape(encodeURIComponent(JSON.stringify({v:1,d:syncKeys()}))));
+  app.innerHTML=`<h2>Sync devices</h2>
+   <p class="muted">Your results, streaks and Endless stats are saved in this browser only. To move them, copy this code, open Daily Poké Catch on your other device, tap <strong>Sync devices</strong> and paste it under &ldquo;Load progress.&rdquo;</p>
+   <textarea class="synccode" id="sync-code" readonly>${code}</textarea>
+   <div class="row"><button class="btn" id="sync-copy">Copy code</button><span class="toast" id="sync-t1"></span></div>
+   <h2 style="margin-top:22px">Load progress</h2>
+   <textarea class="synccode" id="sync-paste" placeholder="Paste a code from your other device"></textarea>
+   <p class="muted" style="font-size:14px;margin-bottom:8px">Days you&rsquo;ve already played on this device stay as they are; anything new from the other device is added. Endless keeps whichever stats are further along.</p>
+   <div class="row"><button class="btn" id="sync-load">Load progress</button><button class="btn ghost" id="sync-back">Done</button><span class="toast" id="sync-t2"></span></div>`;
+  document.getElementById("sync-copy").onclick=()=>{const t=document.getElementById("sync-t1");
+    navigator.clipboard.writeText(code).then(()=>t.textContent="Copied").catch(()=>{const el=document.getElementById("sync-code");el.focus();el.select();t.textContent="Selected; press Ctrl/Cmd+C"})};
+  document.getElementById("sync-load").onclick=()=>{const t=document.getElementById("sync-t2");
+    try{const o=JSON.parse(decodeURIComponent(escape(atob(document.getElementById("sync-paste").value.trim()))));
+      if(!o||!o.d)throw 0;let added=0;
+      for(const [k,v] of Object.entries(o.d)){if(!k.startsWith("pokecatch"))continue;const cur=localStorage.getItem(k);
+        if(k===EKEY){const a=JSON.parse(cur||"{}"),b=JSON.parse(v||"{}");
+          const m={best:Math.max(a.best||0,b.best||0),...((b.total||0)>(a.total||0)?{right:b.right||0,total:b.total||0}:{right:a.right||0,total:a.total||0})};
+          localStorage.setItem(k,JSON.stringify(m));added++;continue}
+        if(cur===null){localStorage.setItem(k,v);added++}}
+      t.textContent=added?"Progress loaded":"Nothing new to add";
+    }catch(e){t.textContent="That code didn't work"}};
+  document.getElementById("sync-back").onclick=()=>setView(view||"main");
+  window.scrollTo({top:0});
+}
+document.getElementById("syncBtn").onclick=syncView;
+setView("main");
+</script>
