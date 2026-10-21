@@ -1,0 +1,67 @@
+# Publishes the "not-live-till-night" branch to "main" at midnight Eastern every night.
+# Change DEV_BRANCH below if your work branch has a different name.
+# This file must live on the main branch, in .github/workflows/.
+name: Midnight release
+
+on:
+  schedule:
+    # GitHub schedules run on UTC time. These two cover midnight Eastern in both
+    # daylight time (04:00 UTC) and standard time (05:00 UTC); the check below
+    # makes sure only the one that lands at midnight actually merges.
+    - cron: "1 4 * * *"
+    - cron: "1 5 * * *"
+    - cron: "17 7 * * *"
+  workflow_dispatch:   # adds a "Run workflow" button to merge right now
+
+permissions:
+  contents: write
+  pages: write
+
+env:
+  DEV_BRANCH: not-live-till-night
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Only run at midnight Eastern
+        id: clock
+        run: |
+          HOUR=$(TZ=America/New_York date +%H)
+          echo "Eastern hour is $HOUR"
+          # GitHub often starts scheduled runs late (sometimes hours), so accept any
+          # run between midnight and noon Eastern. Running twice is harmless.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "$((10#$HOUR))" -lt 12 ]; then
+            echo "go=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=no" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.clock.outputs.go == 'yes'
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Merge the dev branch into main
+        if: steps.clock.outputs.go == 'yes'
+        id: merge
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$DEV_BRANCH"
+          if [ "$(git rev-list --count main..origin/$DEV_BRANCH)" = "0" ]; then
+            echo "Nothing new on $DEV_BRANCH today."
+            echo "pushed=no" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git merge --no-edit "origin/$DEV_BRANCH" -m "Midnight release $(TZ=America/New_York date +%F)"
+          git push origin main
+          echo "pushed=yes" >> "$GITHUB_OUTPUT"
+
+      - name: Rebuild the website
+        if: steps.merge.outputs.pushed == 'yes'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X POST "repos/${{ github.repository }}/pages/builds"
