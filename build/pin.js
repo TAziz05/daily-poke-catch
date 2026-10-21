@@ -13,7 +13,7 @@ const w=new JSDOM(html,{runScripts:"dangerously",url:"https://example.org/",befo
 const todays=w.eval("todays"),slotStart=w.eval("slotStart"),mainSet=w.eval("mainSet");
 const key=q=>q.t+"|"+q.q+"|"+q.a;
 const et=new Intl.DateTimeFormat("en-CA",{timeZone:"America/New_York",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
-const t0=Date.UTC(+et.slice(0,4),+et.slice(5,7)-1,+et.slice(8,10)),day0=Date.UTC(2026,9,21),DAY=864e5;
+const t0=Date.UTC(+et.slice(0,4),+et.slice(5,7)-1,+et.slice(8,10)),day0=Date.UTC(2026,9,20),DAY=864e5;
 const served=dn=>{const p={main:JSON.parse(JSON.stringify(mainSet(dn)))};
   for(const tier of ["e","m","h","x"])p[tier]=JSON.parse(JSON.stringify(todays(tier,5,undefined,slotStart(tier,dn),dn)));return p};
 const known=Object.keys(history).sort(),first=known.length?Date.parse(known[known.length-1]+"T00:00:00Z")+DAY:day0;

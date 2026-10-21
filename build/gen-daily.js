@@ -5,7 +5,7 @@ const html=fs.readFileSync(__dirname+"/out/daily-poke-catch.html","utf8");
 const dom=new JSDOM(html,{runScripts:"dangerously",pretendToBeVisual:true,url:"https://example.org/",beforeParse(win){win.scrollTo=()=>{}}});
 const w=dom.window;const eraLabel=w.eval("eraLabel"),tagLeaks=w.eval("tagLeaks");
 const T={e:"Poké Ball · Easy",m:"Great Ball · Medium",h:"Ultra Ball · Hard",x:"Master Ball · Impossible"};
-const day0=Date.UTC(2026,9,21),out={};
+const day0=Date.UTC(2026,9,20),out={};
 const today=new Date(),start=Math.max(day0,Date.UTC(today.getFullYear(),today.getMonth()-1,1)),end=Date.UTC(today.getFullYear()+1,today.getMonth()+1,1);
 for(let t=start;t<end;t+=864e5){
   const d=new Date(t),key=d.toISOString().slice(0,10),dn=Math.round((t-day0)/864e5);

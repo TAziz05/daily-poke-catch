@@ -160,11 +160,11 @@ const BALL={e:["#e3350d","#fff"],m:["#2f6fe4","#fff"],h:["#2a2a2e","#ffcb05"],x:
 // Simple glossy orb in the tier's color, used as a difficulty marker.
 const orb=(t,s=16)=>`<svg class="orbi" width="${s}" height="${s}" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="${BALL[t][0]}" stroke="${BALL[t][1]}" stroke-width="1.6"/><ellipse cx="7.2" cy="6.6" rx="3" ry="2" fill="#fff" opacity=".55"/></svg>`;
 const PER_DAY=5, CHAPTERS=[...new Set(SEASONS.map(s=>s.ch))];
-const DAY0=Date.UTC(2026,9,21);
+const DAY0=Date.UTC(2026,9,20);
 
 const now=window.__NOW||new Date();
 const dayKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
-// Day 0 is launch day (Oct 21, 2026); every later day picks up where the last one stopped.
+// Day 0 is launch day (Oct 20, 2026); every later day picks up where the last one stopped.
 const dayNum=Math.abs(Math.floor((Date.UTC(now.getFullYear(),now.getMonth(),now.getDate())-DAY0)/864e5));
 document.getElementById("date").textContent=now.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});
 

@@ -6,7 +6,7 @@
 const fs=require("fs");
 const Q=JSON.parse(fs.readFileSync(__dirname+"/out/data.json","utf8")).questions;
 const histFile=__dirname+"/history.json",history=fs.existsSync(histFile)?JSON.parse(fs.readFileSync(histFile,"utf8")):{};
-const MIX={e:1,m:1,h:2,x:1},PER=5,DAYS=200,DAY=864e5,LAUNCH=Date.UTC(2026,9,21);
+const MIX={e:1,m:1,h:2,x:1},PER=5,DAYS=200,DAY=864e5,LAUNCH=Date.UTC(2026,9,20);
 const key=q=>q.t+"|"+q.q+"|"+q.a;
 const hash=s=>{let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0};
 const last={};
