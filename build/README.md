@@ -35,9 +35,11 @@ Only push straight to `main` if Towsif asks for it.
 `pin.js` (part of `npm run build`) reads the live site from `origin/main` and freezes yesterday's, today's and tomorrow's
 questions (Eastern) exactly as players see them now. New questions only start appearing in daily sets from the day after
 tomorrow, so a publish never swaps a day someone has already played. Other modes use new questions right away.
+To re-plan tomorrow as well (only for a release that lands before anyone has played it, like the midnight release),
+build with `REPLAN_TOMORROW=1 npm run build`.
 
 ## How daily questions are chosen
 `schedule.js` plans the next 200 days at every build, using `history.json` (what the live site actually served, recorded by
-`pin.js`). It always picks the questions that have gone longest without appearing, so nothing repeats until a tier's pool is
-used up. Each day stays varied: at most two questions of the same kind (like "What type is X?") or topic, and never the same
-Pokémon twice in one day. Commit `history.json`.
+`pin.js`). No question repeats until every question in its tier has been served the same number of times. Within that, each
+kind of question (like "What type is X?") is spread evenly through the pool, each day gets at most one, then two, of the same
+kind or topic where possible, and never the same Pokémon twice. Commit `history.json`.

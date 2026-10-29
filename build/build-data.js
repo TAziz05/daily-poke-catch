@@ -15,7 +15,8 @@ for (const g of [...DEX.groups, ...GROUPS]) {
   groupList.push({ id: g.id, ch: g.ch, name: g.name, sub: g.sub, url: g.url });
   for (const r of g.qs) out.push({ t: r[0], q: r[1], a: r[2], w: r[3], e: r[4], s: r[5] || g.url, era: g.id, f: r[6] || g.id, mon: r[7] || undefined, grp: g.id });
 }
-for (const r of DEX.who) out.push({ t: r[0], q: r[1], a: r[2], w: r[3], e: r[4], s: r[5], era: r[6], kind: "who", clue: true, f: "who", grp: "W" + r[6].slice(1) });
+const MONID = Object.fromEntries(JSON.parse(fs.readFileSync(__dirname + "/ref/pokedex.json", "utf8")).map(p => [p.name, p.id]));
+for (const r of DEX.who) out.push({ t: r[0], q: r[1], a: r[2], w: r[3], e: r[4], s: r[5], era: r[6], kind: "who", clue: true, f: "who", mon: MONID[r[2]], grp: "W" + r[6].slice(1) });
 
 // Stable ids: group + running number within group.
 const cnt = {};

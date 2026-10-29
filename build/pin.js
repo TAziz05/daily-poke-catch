@@ -21,6 +21,10 @@ const pins={};
 for(let t=Math.min(first,t0-DAY);t<=t0+DAY;t+=DAY){
   const k=new Date(t).toISOString().slice(0,10),dn=Math.round((t-day0)/DAY);if(dn<0)continue;
   const p=served(dn);
+  // REPLAN_TOMORROW=1: leave tomorrow unfrozen so it can be re-planned (only when the release lands
+  // before anyone has played tomorrow, e.g. the midnight release).
+  const keepTomorrowFree=process.env.REPLAN_TOMORROW==='1'&&t===t0+DAY;
+  if(keepTomorrowFree)continue;
   if(t>=t0-DAY)pins[k]=p;
   if(!history[k]||t>=t0-DAY)history[k]=Object.fromEntries(Object.entries(p).map(([s,qs])=>[s,qs.map(key)]));
 }
