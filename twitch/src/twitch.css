@@ -7,6 +7,14 @@ body.tw-panel .q{font-size:18px}
 body.tw-panel .opt{padding:10px 12px}
 body.tw-panel footer{font-size:12px}
 #live-slot:empty{display:none}
+/* phone apps: the extension sits in the chat area, so keep everything compact and let it scroll */
+body.tw-mobile{padding:8px 8px 24px}
+body.tw-mobile h1{font-size:26px}
+body.tw-mobile header{gap:4px 10px}
+body.tw-mobile .tab{font-size:14px!important;padding:7px 4px!important}
+body.tw-mobile .q{font-size:17px}
+body.tw-mobile .opt{padding:9px 10px;min-height:44px}
+@media (orientation:landscape) and (max-height:500px){body.tw-mobile h1{font-size:22px}body.tw-mobile .date{display:none}body.tw-mobile .panel{padding:10px}}
 .tw-card{margin:0 0 12px;gap:10px;border:3px solid #ffd53d}
 .tw-kicker{font-weight:800;font-size:12px;letter-spacing:.3px;opacity:.75}
 .tw-timer{font-weight:800;font-variant-numeric:tabular-nums;font-size:18px;min-width:48px;text-align:right}

@@ -1,6 +1,6 @@
 # Daily Poké Catch on Twitch
 
-One Twitch extension with two parts:
+One Twitch extension with two parts, on computers and in the Twitch phone and tablet apps:
 
 - **Panel** (under the stream): the full Daily Poké Catch game. Every viewer plays their own daily, with the same look,
   secrets and achievements as the website. It loads the questions from the website (`twitch-data.json`), so new
@@ -12,7 +12,7 @@ One Twitch extension with two parts:
 The Twitch version has no creator code or other sponsorship line, because Twitch extensions can't show advertising.
 
 ## What's in this folder
-- `dist/` – the files you upload to Twitch (zip the files inside it, not the folder itself)
+- `dist/` – the files you upload to Twitch (`panel.html`, `live.html`, `mobile.html`, `live_config.html` and their scripts) (zip the files inside it, not the folder itself)
 - `src/` – the extension's own scripts; `build/make-twitch.py` combines them with the game into `dist/`
 - `ebs-url.txt` – your Worker's address, like `https://SOMETHING.workers.dev` (create this file; see step 4)
 
@@ -20,10 +20,11 @@ The Twitch version has no creator code or other sponsorship line, because Twitch
 
 ## Setup (one time)
 1. **Create the extension.** Go to dev.twitch.tv/console/extensions → **Create Extension**, name it (for example
-   "Daily Poké Catch"), and choose these types: **Panel** and **Video - Component**.
+   "Daily Poké Catch"), and choose these types: **Panel**, **Video - Component** and **Mobile** (so viewers on the Twitch phone and tablet apps can play too).
 2. **Asset Hosting** (in the version's settings):
    - Panel Viewer Path: `panel.html` · Panel Height: `500`
    - Video - Component Viewer Path: `live.html`
+   - Mobile Viewer Path: `mobile.html`
    - Live Config Path: `live_config.html`
    - Leave Config Path empty. Under **Capabilities**, set Broadcaster Configuration to **No Configuration**.
 3. **Capabilities → Allowlist for URL Fetching Domains:** add both of these:

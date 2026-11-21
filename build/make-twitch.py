@@ -53,6 +53,8 @@ def page(title,body_cls,body,css,js):
 '''
 g=CFG['game']
 w('panel.html',page(g,'tw-panel',markup,['game.css','twitch.css'],['config.js','loader.js']))
+# Mobile: the same game and live play-along, sized for the chat area of Twitch's phone apps (portrait and landscape).
+w('mobile.html',page(g,'tw-panel tw-mobile',markup,['game.css','twitch.css'],['config.js','loader.js']))
 w('live.html',page(g+' · Live','tw-live','<div id="live-slot"></div>',['game.css','twitch.css'],['config.js','live.js']))
 w('live_config.html',page(g+' · Live controls','tw-config','<main id="cfg"></main>',['twitch.css'],['config.js','live_config.js']))
 print('twitch: built',len(os.listdir(DIST)),'files for',ebs if 'YOUR-WORKER' not in ebs else 'a placeholder server address (fill in twitch/ebs-url.txt)')
