@@ -50,3 +50,7 @@ and the Achievements tab. It only wraps the game's own functions, so the game st
 - Milestones are worked out from saved results in this browser (`*:YYYY-MM-DD:*` keys and Endless stats).
 - Secrets, their counters and seen achievements are saved under `pokecatch:secrets`, `pokecatch:eggcounts` and `pokecatch:ach`,
   so Sync devices carries them too.
+
+## Twitch extension
+`make-twitch.py` (part of `npm run build`) writes `../twitch-data.json` (the questions the Twitch extension loads from
+the website) and `../twitch/dist/` (the files to upload to Twitch). See `../twitch/README.md` for setup.

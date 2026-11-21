@@ -56,5 +56,6 @@ within about 10 minutes; it doesn't need redeploying.
 - `src/index.js` – the Worker (commands, buttons, leaderboards, Activity sign-in, morning post)
 - `client/activity.js` – the script that runs inside the Activity
 - `src/progress.js` – achievements, milestone rules and the progress merge (shared by the Worker and the Activity)
+- `src/twitch.js` – the Twitch extension's live play-along routes (`/twitch/...`); see `../twitch/README.md`
 - `src/activity-bundle.js` – `client/activity.js` bundled with Discord's Embedded App SDK
   (rebuild: `npx esbuild client/activity.js --bundle --minify --format=iife`, then wrap it as `export default "..."`)
