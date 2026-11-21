@@ -5,7 +5,7 @@ Two Twitch extensions, because Twitch lets one extension sit in only one slot on
 - **Daily Poké Catch** (Panel + Mobile): the full game under the stream and in the phone apps. Every viewer plays their own daily,
   with the same look, secrets and achievements as the website, and live questions pop up at the top too. It loads the
   questions from the website (`twitch-data.json`), so new questions reach Twitch without a new review.
-- **Daily Poké Catch Live** (Video - Component): a box on the video that shows only the current live question. You start a
+- **Daily Poké Catch Live** (Video - Component + Mobile): a box on the video (and a tab in the phone apps) that shows only the current live question. You start a
   question from the Stream Manager, viewers answer before the timer runs out, then the reveal shows the right answer
   and how chat split.
 
@@ -26,11 +26,12 @@ Do these steps for each extension. Steps marked **Main** or **Live** apply to th
 
 1. **Create the extension.** dev.twitch.tv/console/extensions → **Create Extension**.
    - **Main:** name it "Daily Poké Catch", types **Panel** and **Mobile**.
-   - **Live:** name it "Daily Poké Catch Live", type **Video - Component** only.
+   - **Live:** name it "Daily Poké Catch Live", types **Video - Component** and **Mobile**.
 2. **Asset Hosting:**
    - **Main:** Panel Viewer Path `panel.html`, Panel Height `500`; Mobile Viewer Path `mobile.html`.
    - **Live:** Video - Component Viewer Path `live.html`; Aspect Ratio width `3`, height `4`; Target Height as high
-     as it allows; Zoom on with Zoom Pixels `480`.
+     as it allows; Zoom on with Zoom Pixels `480`. Mobile Viewer Path: `live.html` too (it fits the phone app's chat
+     area). Mobile needs the Privacy Policy URL in Version Details.
    - **Both:** Live Config Path `live_config.html`. Leave Config Path empty and, under **Capabilities**, set
      Broadcaster Configuration to **No Configuration**.
 3. **Capabilities → Allowlist for URL Fetching Domains:** `https://taziz05.github.io` and your Worker's address.
