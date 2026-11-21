@@ -7,7 +7,7 @@
   const slot = document.getElementById("live-slot");
   if (!slot || !T) return;
   const full = document.body.classList.contains("tw-live");
-  let auth = null, st = { round: null }, skew = 0, err = "", busy = false, tick = null;
+  let auth = null, st = { round: null }, skew = 0, err = "", busy = false, tick = null, counted = false;
   const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const now = () => Date.now() + skew;
   const loggedOut = () => !auth || String(auth.userId || "").startsWith("A");
@@ -22,7 +22,8 @@
   async function refresh() {
     if (!auth) return;
     try {
-      const s = await api("/twitch/state");
+      const view = document.body.classList.contains("tw-live") ? "live" : document.body.classList.contains("tw-mobile") ? "mobile" : "panel";
+      const s = await api("/twitch/state" + (counted ? "" : `?view=${view}&first=1`)); counted = true;
       if (s._status !== 200) { err = s.error || ""; render(); return; }
       if (s.now) skew = s.now - Date.now();
       st = s; err = ""; render();

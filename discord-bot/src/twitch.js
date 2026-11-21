@@ -10,6 +10,7 @@
 //   TWITCH_LIVE_CLIENT_ID, TWITCH_LIVE_SECRET  the Live extension's Client ID and secret
 //   TWITCH_EXT_OWNER_ID                        the Twitch user ID of the account that owns both extensions
 import { GAME } from "./progress.js";
+import { count } from "./analytics.js";
 
 const SESSION_HOURS = 12;   // "this stream" = answers in the last 12 hours
 const RECENT = 60;          // don't repeat any of the last 60 random questions in a channel
@@ -150,7 +151,11 @@ export async function twitch(env, req, path, ctx, site) {
   const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
   const now = Date.now();
 
+  const country = req.cf && req.cf.country;
   if (path === "/twitch/state") {
+    const view = new URL(req.url).searchParams.get("view");
+    if (new URL(req.url).searchParams.get("first") && ["panel", "mobile", "live", "controls"].includes(view))
+      count(env, ctx, site, "twitch/" + view, { panel: "Twitch: panel opened", mobile: "Twitch: mobile view opened", live: "Twitch: Live box opened", controls: "Twitch: streamer controls opened" }[view], viewer || channel, country);
     const { round } = await getRound(env, channel);
     const res = { game: GAME.name, round: publicRound(round), now };
     if (round && viewer) {
@@ -172,6 +177,7 @@ export async function twitch(env, req, path, ctx, site) {
     if (pick < 0 || pick >= round.opts.length) return out({ error: "bad pick" }, 400);
     const r = await (await tdb(env)).prepare("INSERT OR IGNORE INTO twitch_answers (round_id,viewer,channel_id,pick,ok,ts) VALUES (?,?,?,?,?,?)")
       .bind(round.id, viewer, channel, pick, pick === round.a ? 1 : 0, now).run();
+    if (r.meta?.changes ?? 1) count(env, ctx, site, "twitch/answer", "Twitch: live answer", viewer, country);
     return out({ ok: true, locked: !(r.meta?.changes ?? 1) });
   }
 
@@ -201,6 +207,7 @@ export async function twitch(env, req, path, ctx, site) {
     const round = { id: crypto.randomUUID(), ...q, tier: TIER(q.t), started: now, ends: now + seconds * 1000, seconds, revealed: false };
     await saveRound(env, channel, round, [...recent, q.qid]);
     ctx.waitUntil(broadcast(env, channel, { type: "round", round: publicRound(round) }));
+    count(env, ctx, site, "twitch/question", "Twitch: live question started", "channel:" + channel, country);
     return out({ ok: true, round, answer: round.a });
   }
 

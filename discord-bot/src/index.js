@@ -4,6 +4,7 @@
 import ACTIVITY_JS from "./activity-bundle.js";
 import { GAME, mergeKeys, achievementsEmbed } from "./progress.js";
 import { twitch, twitchCleanup } from "./twitch.js";
+import { count } from "./analytics.js";
 
 const TZ = "America/New_York";
 const API = env => env.DISCORD_API || "https://discord.com/api/v10";
@@ -217,8 +218,8 @@ async function startDaily(env, user, update_ = false) {
 async function onComponent(env, ix, ctx) {
   const user = ix.member?.user || ix.user, guild = ix.guild_id;
   const [kind, day, a, b] = ix.data.custom_id.split("|");
-  if (kind === "start") return startDaily(env, user);
-  if (kind === "play") return json({ type: 12 });
+  if (kind === "start") { count(env, ctx, SITE(env), "discord/daily", "Discord: /daily", user.id); return startDaily(env, user); }
+  if (kind === "play") { count(env, ctx, SITE(env), "discord/play", "Discord: /play", user.id); return json({ type: 12 }); }
   const today = nyDay();
   if (day && day !== today) return update({ embeds: [{ description: "That catch has ended. Use **/daily** to play today's!", color: YELLOW }], components: [] });
   const qs = await dayQuestions(env, today);
@@ -241,6 +242,7 @@ async function onComponent(env, ix, ctx) {
     await (await db(env)).prepare("INSERT INTO results (user_id,day,marks,score,done) VALUES (?,?,?,?,?) ON CONFLICT(user_id,day) DO UPDATE SET marks=excluded.marks, score=excluded.score, done=excluded.done")
       .bind(user.id, today, marks, score, done).run();
     if (done) {
+      count(env, ctx, SITE(env), "discord/daily-finished", "Discord: finished /daily", user.id);
       await saveMember(env, guild, user, ix.member?.nick);
       const st = streaks(await playedDays(env, user.id), today);
       const name = ix.member?.nick || user.global_name || user.username;
@@ -340,6 +342,7 @@ const ENTRY_POINT = { name: "launch", description: "Play Daily Poké Catch", typ
 async function onCommand(env, ix, ctx) {
   const user = ix.member?.user || ix.user, guild = ix.guild_id, opt = n => ix.data.options?.find(o => o.name === n)?.value;
   if (guild) await saveMember(env, guild, user, ix.member?.nick);
+  count(env, ctx, SITE(env), "discord/" + ix.data.name, "Discord: /" + ix.data.name, user.id);
   switch (ix.data.name) {
     case "daily": return startDaily(env, user);
     case "leaderboard": return leaderboard(env, guild, opt("period") || "today");
@@ -409,6 +412,7 @@ async function api(env, req, path, ctx) {
   if (!user) return json({ error: "not signed in" }, 401);
   const day = nyDay();
   if (path === "/api/status") {
+    count(env, ctx, SITE(env), "discord/activity", "Discord: full game (Activity)", user.id);
     const r = await getResult(env, user.id, day), qs = await dayQuestions(env, day);
     return json(r?.done && qs ? { marks: [...r.marks].map(c => c === "1"), ids: qs.map(q => q.id), day } : { day });
   }
@@ -418,6 +422,7 @@ async function api(env, req, path, ctx) {
       return json({ error: "not today's catch" }, 400);
     const existing = await getResult(env, user.id, day);
     if (existing?.done) return json({ ok: true, already: true });
+    count(env, ctx, SITE(env), "discord/activity-finished", "Discord: finished the daily in the Activity", user.id);
     const marks = b.marks.map(x => (x ? "1" : "0")).join(""), score = [...marks].filter(c => c === "1").length;
     await (await db(env)).prepare("INSERT INTO results (user_id,day,marks,score,done) VALUES (?,?,?,?,1) ON CONFLICT(user_id,day) DO UPDATE SET marks=excluded.marks, score=excluded.score, done=1")
       .bind(user.id, day, marks, score).run();

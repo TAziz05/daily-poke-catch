@@ -4,7 +4,7 @@
   const C = window.TWITCH_CFG || {}, T = window.Twitch && window.Twitch.ext;
   const app = document.getElementById("cfg");
   if (!app || !T) return;
-  let auth = null, st = { round: null }, skew = 0, secs = 30, auto = true, busy = false, revealing = false, msg = "", tick = null, poll = null;
+  let counted = false, auth = null, st = { round: null }, skew = 0, secs = 30, auto = true, busy = false, revealing = false, msg = "", tick = null, poll = null;
   try { secs = +localStorage.getItem("tw:secs") || 30; auto = localStorage.getItem("tw:auto") !== "0"; } catch (e) {}
   const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const now = () => Date.now() + skew;
@@ -16,7 +16,7 @@
   async function refresh() {
     if (!auth) return;
     try {
-      const s = await api("/twitch/state");
+      const s = await api("/twitch/state" + (counted ? "" : "?view=controls&first=1")); counted = true;
       if (s._status !== 200) { msg = s.error || "Couldn't reach the game server."; render(); return; }
       if (s.now) skew = s.now - Date.now();
       st = s; render();
