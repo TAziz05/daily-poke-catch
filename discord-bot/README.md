@@ -11,10 +11,18 @@ same Daily Catch. The day changes at midnight Eastern time.
   Finishing the Daily Catch there also posts your result and counts on the leaderboard.
 - `/leaderboard` – today, this week or all time.
 - `/stats` – streak, average and score spread for you or someone else.
+- `/achievements` – milestones and secrets found, for you or someone else.
 - `/setchannel` (admins) – post "today's catch is live" every morning, with yesterday's recap.
 - `/stopdaily` (admins) and `/help`.
 
 Each player gets one go per day. Whichever they finish first (`/daily` or the Activity) is the one that counts.
+
+## Achievements and saved progress
+When the full game opens inside Discord (the Activity), it sends the player's saved progress (results, Endless stats,
+secrets and their counters) to the bot, and loads it back on any other device. Merging never loses anything: secrets
+are added together and counters keep the higher number. `/daily` results count toward milestones too.
+New or changed slash commands register themselves on the bot's hourly check, so there's no need to revisit `/setup`.
+Progress on the website itself stays in that browser (use Sync devices there).
 
 ## Setup (one time)
 This is a separate Discord app and Worker from Drop-In Daily's, so they don't share commands or leaderboards.
@@ -47,5 +55,6 @@ within about 10 minutes; it doesn't need redeploying.
 ## Files
 - `src/index.js` – the Worker (commands, buttons, leaderboards, Activity sign-in, morning post)
 - `client/activity.js` – the script that runs inside the Activity
+- `src/progress.js` – achievements, milestone rules and the progress merge (shared by the Worker and the Activity)
 - `src/activity-bundle.js` – `client/activity.js` bundled with Discord's Embedded App SDK
   (rebuild: `npx esbuild client/activity.js --bundle --minify --format=iife`, then wrap it as `export default "..."`)

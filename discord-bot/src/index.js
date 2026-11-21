@@ -2,6 +2,7 @@
 // Questions come from the website's daily/YYYY-MM.json files, so the bot, the Activity
 // and the website all serve the same Daily Catch each day (America/New_York date).
 import ACTIVITY_JS from "./activity-bundle.js";
+import { GAME, mergeKeys, achievementsEmbed } from "./progress.js";
 
 const TZ = "America/New_York";
 const API = env => env.DISCORD_API || "https://discord.com/api/v10";
@@ -42,6 +43,8 @@ async function db(env) {
       env.DB.prepare("CREATE TABLE IF NOT EXISTS results (user_id TEXT, day TEXT, marks TEXT, score INTEGER DEFAULT 0, done INTEGER DEFAULT 0, PRIMARY KEY (user_id, day))"),
       env.DB.prepare("CREATE TABLE IF NOT EXISTS members (guild_id TEXT, user_id TEXT, name TEXT, PRIMARY KEY (guild_id, user_id))"),
       env.DB.prepare("CREATE TABLE IF NOT EXISTS channels (guild_id TEXT PRIMARY KEY, channel_id TEXT, hour INTEGER DEFAULT 9, last_day TEXT)"),
+      env.DB.prepare("CREATE TABLE IF NOT EXISTS progress (user_id TEXT PRIMARY KEY, data TEXT, updated TEXT)"),
+      env.DB.prepare("CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT)"),
     ]);
     schemaReady = true;
   }
@@ -69,6 +72,61 @@ function streaks(days, today) {
   return { cur, best };
 }
 const grid = marks => [...marks].map(c => (c === "1" ? "🟢" : "🔴")).join("");
+
+// ---------- saved progress and achievements ----------
+// The full game's saved keys for one player, as sent by the Activity.
+async function storedKeys(env, uid) {
+  const r = await (await db(env)).prepare("SELECT data FROM progress WHERE user_id=?").bind(uid).first();
+  try { return r ? JSON.parse(r.data) : {}; } catch (e) { return {}; }
+}
+async function saveKeys(env, uid, keys) {
+  await (await db(env)).prepare("INSERT INTO progress (user_id,data,updated) VALUES (?,?,?) ON CONFLICT(user_id) DO UPDATE SET data=excluded.data, updated=excluded.updated")
+    .bind(uid, JSON.stringify(keys), new Date().toISOString()).run();
+}
+// Daily results played with /daily or the Activity, written the way the game saves them, plus each question's tier.
+async function resultKeys(env, uid) {
+  const { results } = await (await db(env)).prepare("SELECT day, marks FROM results WHERE user_id=? AND done=1 ORDER BY day DESC LIMIT 800").bind(uid).all();
+  const months = {}, keys = {}, tiers = {};
+  for (const r of results) {
+    const mk = r.day.slice(0, 7);
+    if (!(mk in months)) {
+      const res = await fetch(`${SITE(env)}/daily/${mk}.json`, { cf: { cacheTtl: 600, cacheEverything: true } }).catch(() => null);
+      months[mk] = res && res.ok ? await res.json() : {};
+    }
+    const qs = months[mk][r.day];
+    if (!qs) continue;
+    qs.forEach(q => { tiers[q.id] = q.t; });
+    keys[`${GAME.dayKey}:${r.day}:main`] = JSON.stringify({ marks: [...r.marks].map(c => c === "1"), ids: qs.map(q => q.id) });
+  }
+  return { keys, tierOf: id => tiers[id] || null };
+}
+async function fullProgress(env, uid) {
+  const [saved, fromResults] = await Promise.all([storedKeys(env, uid), resultKeys(env, uid)]);
+  return { keys: mergeKeys(saved, fromResults.keys), tierOf: fromResults.tierOf };
+}
+// /achievements can take a few seconds (it reads old daily files), so it answers "thinking…" first and fills in after.
+async function achievements(env, ix) {
+  const target = ix.data.options?.find(o => o.name === "player")?.value;
+  const user = target ? ix.data.resolved.users[target] : ix.member?.user || ix.user;
+  const hook = `${API(env)}/webhooks/${env.DISCORD_APP_ID}/${ix.token}/messages/@original`;
+  let body;
+  try {
+    const { keys, tierOf } = await fullProgress(env, user.id);
+    body = { embeds: [achievementsEmbed(keys, tierOf, user.global_name || user.username, YELLOW)], allowed_mentions: NO_PINGS };
+  } catch (e) {
+    console.log("achievements", e.stack || e);
+    body = { content: "Couldn't load achievements right now. Try again in a moment." };
+  }
+  await fetch(hook, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+}
+// New or changed commands register themselves on the hourly check, so nobody has to revisit /setup.
+async function ensureCommands(env) {
+  const want = JSON.stringify([...COMMANDS, ENTRY_POINT]), D = await db(env);
+  const row = await D.prepare("SELECT v FROM meta WHERE k='commands'").first();
+  if (row?.v === want) return;
+  const msg = await registerCommands(env);
+  if (msg.startsWith("Commands registered")) await D.prepare("INSERT INTO meta (k,v) VALUES ('commands',?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(want).run();
+}
 
 // ---------- Discord helpers ----------
 async function discord(env, method, path, body) {
@@ -253,6 +311,7 @@ async function dailyPost(env, guild, channel, day) {
   });
 }
 async function cron(env) {
+  try { await ensureCommands(env); } catch (e) { console.log("commands", e.stack || e); }
   const day = nyDay(), hour = nyHour();
   const { results } = await (await db(env)).prepare("SELECT guild_id, channel_id FROM channels WHERE hour=? AND (last_day IS NULL OR last_day<>?)").bind(hour, day).all();
   for (const c of results) {
@@ -266,6 +325,7 @@ const COMMANDS = [
   { name: "daily", description: "Play today's Daily Poké Catch (5 questions, only you can see them)" },
   { name: "leaderboard", description: "See this server's Daily Poké Catch leaderboard", options: [{ type: 3, name: "period", description: "Which leaderboard", required: false, choices: [{ name: "Today", value: "today" }, { name: "This week", value: "week" }, { name: "All time", value: "all" }] }] },
   { name: "stats", description: "Daily Poké Catch stats for you or another player", options: [{ type: 6, name: "player", description: "Whose stats to show", required: false }] },
+  { name: "achievements", description: "Daily Poké Catch achievements for you or another player", options: [{ type: 6, name: "player", description: "Whose achievements to show", required: false }] },
   { name: "play", description: "Open the full Daily Poké Catch game inside Discord" },
   { name: "setchannel", description: "Post the Daily Catch in a channel every morning", default_member_permissions: "32", contexts: [0],
     options: [{ type: 7, name: "channel", description: "Where to post (defaults to this channel)", required: false, channel_types: [0, 5] },
@@ -275,13 +335,14 @@ const COMMANDS = [
 ];
 const ENTRY_POINT = { name: "launch", description: "Play Daily Poké Catch", type: 4, handler: 2 };
 
-async function onCommand(env, ix) {
+async function onCommand(env, ix, ctx) {
   const user = ix.member?.user || ix.user, guild = ix.guild_id, opt = n => ix.data.options?.find(o => o.name === n)?.value;
   if (guild) await saveMember(env, guild, user, ix.member?.nick);
   switch (ix.data.name) {
     case "daily": return startDaily(env, user);
     case "leaderboard": return leaderboard(env, guild, opt("period") || "today");
     case "stats": return stats(env, ix);
+    case "achievements": ctx.waitUntil(achievements(env, ix)); return json({ type: 5 });
     case "play": return json({ type: 12 });
     case "setchannel": {
       const ch = opt("channel") || ix.channel_id, hour = opt("hour") ?? 9;
@@ -298,7 +359,7 @@ async function onCommand(env, ix) {
         "A daily Pokémon trivia catch: **1 Easy, 1 Medium, 2 Hard and 1 Impossible** question, the same for everyone. A new catch starts at midnight Eastern.",
         "", "**/daily** · play right here (only you see the questions, your result is shared)",
         "**/play** · open the full game with every mode",
-        "**/leaderboard** · today, this week or all time", "**/stats** · your streak and score history",
+        "**/leaderboard** · today, this week or all time", "**/stats** · your streak and score history", "**/achievements** · milestones and secrets you've found",
         "**/setchannel** · admins: post the catch every morning", "", `Website: ${SITE(env)}/`].join("\n") }] }, true);
   }
   return reply({ content: "Unknown command." }, true);
@@ -371,6 +432,15 @@ async function api(env, req, path, ctx) {
     }
     return json({ ok: true });
   }
+  if (path === "/api/progress") {
+    if (req.method === "POST") {
+      const b = await req.json().catch(() => ({}));
+      if (!b || typeof b.keys !== "object" || JSON.stringify(b.keys).length > 900000) return json({ error: "bad progress" }, 400);
+      await saveKeys(env, user.id, mergeKeys(await storedKeys(env, user.id), b.keys));
+      return json({ ok: true });
+    }
+    return json({ keys: (await fullProgress(env, user.id)).keys });
+  }
   return json({ error: "not found" }, 404);
 }
 
@@ -391,7 +461,7 @@ export default {
         const ix = await verify(req, env);
         if (!ix) return new Response("bad signature", { status: 401 });
         if (ix.type === 1) return json({ type: 1 });
-        if (ix.type === 2) return await onCommand(env, ix);
+        if (ix.type === 2) return await onCommand(env, ix, ctx);
         if (ix.type === 3) return await onComponent(env, ix, ctx);
         return json({ type: 1 });
       }

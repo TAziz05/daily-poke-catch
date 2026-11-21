@@ -170,7 +170,7 @@ footer a{color:#fff}
     <button class="tab" role="tab" id="tab-bank" data-v="bank">Question Bank</button>
   </nav>
   <main id="app" class="panel" aria-live="polite"></main>
-  <footer>Questions come from Bulbapedia, the official Pokédex on pokemon.com, the Pokémon Fandom wiki and Wikipedia. Every answer links its source.<br><br>Daily Poké Catch is an unofficial fan game. Pokémon and all related names are trademarks of Nintendo, Game Freak, Creatures Inc. and The Pokémon Company. This site is not affiliated with or endorsed by them.<br><br><details class="ver"><summary><span>v2.00 · update #4</span></summary><ol><li><b>v2.00</b> <span>2026-11-21</span> New look (battle screens, catch animations, night route with tall grass), an Achievements tab with 5 secrets to find, and a fix to the Alolan Rattata question</li><li><b>v1.02</b> <span>2026-10-30</span> Fixed repeating daily questions: nothing repeats until a difficulty&#x27;s whole pool has been played</li><li><b>v1.01</b> <span>2026-10-21</span> New logo: a ring of the 18 type colors</li><li><b>v1.00</b> <span>2026-10-20</span> Launch: Daily Catch, By Difficulty, Generations &amp; Topics, Who&#x27;s That Pokémon?, Endless, Question Bank, Sync devices and the Discord bot</li></ol></details><button class="syncbtn" id="syncBtn" type="button">Sync devices</button><br><span class="credit">Coded with Claude (Opus 5.5) by Anthropic</span></footer>
+  <footer>Questions come from Bulbapedia, the official Pokédex on pokemon.com, the Pokémon Fandom wiki and Wikipedia. Every answer links its source.<br><br>Daily Poké Catch is an unofficial fan game. Pokémon and all related names are trademarks of Nintendo, Game Freak, Creatures Inc. and The Pokémon Company. This site is not affiliated with or endorsed by them.<br><br><details class="ver"><summary><span>v2.01 · update #5</span></summary><ol><li><b>v2.01</b> <span>2026-11-21</span> Discord: /achievements, and progress in the Discord Activity is saved to your Discord account</li><li><b>v2.00</b> <span>2026-11-21</span> New look (battle screens, catch animations, night route with tall grass), an Achievements tab with 5 secrets to find, and a fix to the Alolan Rattata question</li><li><b>v1.02</b> <span>2026-10-30</span> Fixed repeating daily questions: nothing repeats until a difficulty&#x27;s whole pool has been played</li><li><b>v1.01</b> <span>2026-10-21</span> New logo: a ring of the 18 type colors</li><li><b>v1.00</b> <span>2026-10-20</span> Launch: Daily Catch, By Difficulty, Generations &amp; Topics, Who&#x27;s That Pokémon?, Endless, Question Bank, Sync devices and the Discord bot</li></ol></details><button class="syncbtn" id="syncBtn" type="button">Sync devices</button><br><span class="credit">Coded with Claude (Opus 5.5) by Anthropic</span></footer>
 </div>
 
 <script>
@@ -860,7 +860,7 @@ if(typeof Element!=="undefined"&&Element.prototype.animate){
 /* Achievements: milestones worked out from saved play, plus hidden secrets with a counter for each. */
 function makeAch(C){
   const CK=C.pfx+":eggcounts",SK=C.pfx+":secrets",AK=C.pfx+":ach";
-  const counts=Object.assign({},store.get(CK)||{}),found=new Set((store.get(SK)||[]).filter(id=>C.eggs.some(e=>e[0]===id)));
+  let counts={},found=new Set(),seen=new Set();
   const SETS=["main","e","m","h","x"],perfect=v=>v&&v.marks&&v.marks.length&&v.marks.every(Boolean);
   function stats(){const days={};
     try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i),m=k&&k.match(C.dayRe);if(!m)continue;const v=store.get(k);if(v&&v.marks)(days[m[1]]=days[m[1]]||{})[m[2]]=v}}catch(e){}
@@ -871,7 +871,10 @@ function makeAch(C){
       best:eStats().best,secrets:found.size}}
   const prog=(m,st)=>{const [c,g]=m[3](st);return [Math.min(c,g),g]};
   const earned=st=>C.miles.filter(m=>{const [c,g]=prog(m,st);return c>=g}).map(m=>m[0]);
-  let seen=store.get(AK);if(!Array.isArray(seen)){seen=earned(stats());store.set(AK,seen)}seen=new Set(seen);
+  // Read saved state (again after the Discord Activity merges in progress from other devices).
+  function load(){counts=Object.assign({},store.get(CK)||{});found=new Set((store.get(SK)||[]).filter(id=>C.eggs.some(e=>e[0]===id)));
+    let s=store.get(AK);if(!Array.isArray(s)){s=earned(stats());store.set(AK,s)}seen=new Set(s)}
+  load();
   function check(){const st=stats();for(const id of earned(st))if(!seen.has(id)){seen.add(id);store.set(AK,[...seen]);const m=C.miles.find(x=>x[0]===id);C.notify("Achievement unlocked",`${m[1]}: ${m[2]}`)}refresh()}
   function secret(id){counts[id]=(counts[id]||0)+1;store.set(CK,counts);
     if(!found.has(id)){found.add(id);store.set(SK,[...found]);const e=C.eggs.find(x=>x[0]===id);C.notify("Secret achievement",`${e[1]}: ${e[2]}`);check()}else refresh()}
@@ -891,7 +894,7 @@ function makeAch(C){
   function refresh(){if(document.getElementById("ach-root"))render()}
   const _r=results;results=function(f){_r(f);if(f)check()};
   const _ee=endlessAnswer;endlessAnswer=function(b){_ee(b);check()};
-  return {secret,check,has:id=>found.has(id)};
+  return {secret,check,has:id=>found.has(id),reload(){load();refresh()}};
 }
 
 const R=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -932,6 +935,7 @@ const ACH=makeAch({pfx:"pokecatch",dayRe:/^pokecatch1:(\d{4}-\d{2}-\d{2}):(main|
    ["s10","On a Roll","Reach a 10-question streak in Endless",s=>[s.best,10]],
    ["s25","Unstoppable","Reach a 25-question streak in Endless",s=>[s.best,25]],
    ["hunter","Secret Hunter","Find every secret",s=>[s.secrets,5]]]});
+window.gameAch=ACH;
 const secret=id=>ACH.secret(id);
 
 /* the game's own wild-question mascot, small */
