@@ -50,6 +50,11 @@ The Twitch version has no creator code or other sponsorship line, because Twitch
 8. **Submit for review** when it works. Twitch needs your channel live with the extension active during the review
    time you pick. Mention in the notes that it's an unofficial fan trivia game with the disclaimer in the footer.
 
+## Store listing (Version Details)
+- **Privacy Policy URL:** `https://taziz05.github.io/daily-poke-catch/privacy.html` (required because the extension works on mobile)
+- **EULA or Terms of Service URL:** `https://taziz05.github.io/daily-poke-catch/terms.html`
+- **Images:** logo 100×100, taskbar icon 24×24, discovery image 300×200 and screenshot 1024×768 are made from the game's own artwork and real screens.
+
 ## How the live play-along works
 - **Start:** pick one of today's 5 Daily questions or a random question by difficulty, and how long viewers get
   (15–60 seconds).

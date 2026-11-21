@@ -112,6 +112,11 @@ function publicRound(round) {
   return round.revealed ? { ...rest, a, e, s } : rest;
 }
 
+// Live play-along answers are kept for 30 days (see privacy.html), then deleted on the hourly check.
+export async function twitchCleanup(env) {
+  await (await tdb(env)).prepare("DELETE FROM twitch_answers WHERE ts<?").bind(Date.now() - 30 * 864e5).run();
+}
+
 // ---------- routes ----------
 function cors(req) {
   const o = req.headers.get("origin") || "";

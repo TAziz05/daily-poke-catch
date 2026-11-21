@@ -3,7 +3,7 @@
 // and the website all serve the same Daily Catch each day (America/New_York date).
 import ACTIVITY_JS from "./activity-bundle.js";
 import { GAME, mergeKeys, achievementsEmbed } from "./progress.js";
-import { twitch } from "./twitch.js";
+import { twitch, twitchCleanup } from "./twitch.js";
 
 const TZ = "America/New_York";
 const API = env => env.DISCORD_API || "https://discord.com/api/v10";
@@ -313,6 +313,7 @@ async function dailyPost(env, guild, channel, day) {
 }
 async function cron(env) {
   try { await ensureCommands(env); } catch (e) { console.log("commands", e.stack || e); }
+  try { await twitchCleanup(env); } catch (e) { console.log("twitch cleanup", e.stack || e); }
   const day = nyDay(), hour = nyHour();
   const { results } = await (await db(env)).prepare("SELECT guild_id, channel_id FROM channels WHERE hour=? AND (last_day IS NULL OR last_day<>?)").bind(hour, day).all();
   for (const c of results) {
