@@ -11,7 +11,8 @@ d=json.dumps(D,ensure_ascii=False,separators=(',',':')).replace('</','<\\/')
 t=open(R+'template.html').read()
 V=json.load(open(R+'versions.json'))
 cur,build=V[-1][0],len(V)
-ver=f'<div class="ver"><span>{cur} · update #{build}</span></div>'
+log=''.join(f'<li><b>{v}</b> <span>{dt}</span> {html.escape(n)}</li>' for v,dt,n in reversed(V))
+ver=f'<details class="ver"><summary><span>{cur} · update #{build}</span></summary><ol>{log}</ol></details>'
 pin=open(R+'out/pinned.json').read().replace('</','<\\/') if os.path.exists(R+'out/pinned.json') else '{}'
 sch=open(R+'out/schedule.json').read() if os.path.exists(R+'out/schedule.json') else '{}'
 assert '/*SCHED*/{}' in t and '/*PIN*/{}' in t and '/*DATA*/null' in t and '<!--VERSION-->' in t
