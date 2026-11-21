@@ -25,13 +25,15 @@ New or changed slash commands register themselves on the bot's hourly check, so 
 Progress on the website itself stays in that browser (use Sync devices there).
 
 ## Usage counts in GoatCounter (optional)
-The Worker can count Discord and Twitch use in GoatCounter, next to the website's visits: commands like `/daily`,
-finished dailies, the Activity, and on Twitch the panel, mobile view, Live box, streamer controls, live questions and
-answers. They show up as events under this game's path (for example `.../discord/daily` or `.../twitch/answer`).
+The Worker counts Discord and Twitch use in two GoatCounter sites of their own, separate from the website's:
+Discord (commands like `/daily`, finished dailies, the Activity) and Twitch (panel, mobile view, Live box, streamer
+controls opened, live questions and answers). Each shows up under this game's path, like `/drop-in-daily/daily`.
 Players are counted by a scrambled ID, never their Discord or Twitch ID.
-To turn it on: in GoatCounter open your username menu → **API** → create a key with permission to **record
-pageviews**, then add it to this Worker as a Secret named `GOATCOUNTER_TOKEN`. (Optional: `GOATCOUNTER_URL` if your
-GoatCounter address isn't https://taziz322.goatcounter.com.)
+To turn it on:
+1. In GoatCounter, add two sites (Settings → Sites): `taziz322-discord` and `taziz322-twitch`.
+2. Create an API key (username menu → API) with **Record pageviews**, with access to both sites.
+3. Add it to this Worker as a Secret named `GOATCOUNTER_TOKEN`. If you picked different site codes, also add
+   `GOATCOUNTER_DISCORD_URL` / `GOATCOUNTER_TWITCH_URL` (like `https://your-code.goatcounter.com`).
 
 ## Setup (one time)
 This is a separate Discord app and Worker from Drop-In Daily's, so they don't share commands or leaderboards.
