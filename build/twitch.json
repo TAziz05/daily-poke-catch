@@ -1,0 +1,5 @@
+{
+ "game": "Daily Poké Catch",
+ "site": "https://taziz05.github.io/daily-poke-catch",
+ "tiers": {"e": "Poké Ball · Easy", "m": "Great Ball · Medium", "h": "Ultra Ball · Hard", "x": "Master Ball · Impossible"}
+}

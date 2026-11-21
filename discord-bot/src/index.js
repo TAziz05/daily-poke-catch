@@ -3,6 +3,7 @@
 // and the website all serve the same Daily Catch each day (America/New_York date).
 import ACTIVITY_JS from "./activity-bundle.js";
 import { GAME, mergeKeys, achievementsEmbed } from "./progress.js";
+import { twitch } from "./twitch.js";
 
 const TZ = "America/New_York";
 const API = env => env.DISCORD_API || "https://discord.com/api/v10";
@@ -447,7 +448,7 @@ async function api(env, req, path, ctx) {
 // Pasted secrets sometimes carry spaces or line breaks; clean them once.
 function clean(env) {
   const out = { ...env };
-  for (const k of ["DISCORD_APP_ID", "DISCORD_PUBLIC_KEY", "DISCORD_BOT_TOKEN", "DISCORD_CLIENT_SECRET", "SETUP_KEY"])
+  for (const k of ["DISCORD_APP_ID", "DISCORD_PUBLIC_KEY", "DISCORD_BOT_TOKEN", "DISCORD_CLIENT_SECRET", "SETUP_KEY", "TWITCH_EXT_CLIENT_ID", "TWITCH_EXT_SECRET", "TWITCH_EXT_OWNER_ID"])
     if (typeof out[k] === "string") out[k] = out[k].trim().replace(/^["']|["']$/g, "");
   return out;
 }
@@ -484,9 +485,13 @@ export default {
           ["SETUP_KEY set", !!env.SETUP_KEY],
           ["Database connected", dbOk],
           ["Today's questions found", !!(await dayQuestions(env, nyDay()).catch(() => null))],
+          ["Twitch: TWITCH_EXT_CLIENT_ID set (optional, for the Twitch extension)", !!env.TWITCH_EXT_CLIENT_ID],
+          ["Twitch: TWITCH_EXT_SECRET set (optional)", !!env.TWITCH_EXT_SECRET],
+          ["Twitch: TWITCH_EXT_OWNER_ID set (optional)", !!env.TWITCH_EXT_OWNER_ID && /^\d+$/.test(env.TWITCH_EXT_OWNER_ID)],
         ];
         return new Response(`<!doctype html><meta name="viewport" content="width=device-width"><body style="font-family:system-ui;padding:20px"><h2>Daily Poké Catch bot status</h2>${lines.map(([t, ok]) => `<p>${ok ? "✅" : "❌"} ${t}</p>`).join("")}${pk && !/^[0-9a-f]{64}$/i.test(pk) ? `<p>Your public key is ${pk.length} characters long. It should be exactly 64.</p>` : ""}`, { headers: { "content-type": "text/html; charset=utf-8" } });
       }
+      if (path.startsWith("/twitch/")) return await twitch(env, req, path, ctx, SITE(env));
       if (path.startsWith("/api/")) return await api(env, req, path, ctx);
       if (path === "/activity.js") return new Response(ACTIVITY_JS, { headers: { "content-type": "text/javascript", "cache-control": "max-age=300" } });
       if (path === "/" || path === "/index.html") return await activityPage(env);

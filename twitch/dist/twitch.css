@@ -1,0 +1,57 @@
+/* Extras for the Twitch extension: the narrow panel, the live question card, and the streamer's controls. */
+body.tw-panel{padding:10px 10px 28px;font-size:15px}
+body.tw-panel h1{font-size:30px}
+body.tw-panel .date{font-size:12px}
+body.tw-panel .panel{padding:14px}
+body.tw-panel .q{font-size:18px}
+body.tw-panel .opt{padding:10px 12px}
+body.tw-panel footer{font-size:12px}
+#live-slot:empty{display:none}
+.tw-card{margin:0 0 12px;gap:10px;border:3px solid #ffd53d}
+.tw-kicker{font-weight:800;font-size:12px;letter-spacing:.3px;opacity:.75}
+.tw-timer{font-weight:800;font-variant-numeric:tabular-nums;font-size:18px;min-width:48px;text-align:right}
+.tw-timer.hot{color:#e2453c}
+.opt.tw-mine{border-color:#7c4dff;background:#f1ecff}
+.opt.tw-res{position:relative;background:linear-gradient(90deg,rgba(124,77,255,.16) var(--p,0%),#fff var(--p,0%))}
+.opt.right.tw-res{background:linear-gradient(90deg,rgba(47,168,79,.28) var(--p,0%),#e6f6ea var(--p,0%))}
+.opt .tw-o{flex:1}
+.tw-pct{font-weight:800;font-variant-numeric:tabular-nums}
+.tw-score{font-weight:700;font-size:14px}
+.tw-err{color:#e2453c}
+body.tw-live{padding:8px;min-height:100vh;box-sizing:border-box}
+body.tw-live .tw-card{margin:0}
+body.tw-live .tw-idle{opacity:.92}
+body.tw-live{font-size:14px}
+body.tw-live .tw-card{padding:12px;gap:8px}
+body.tw-live .q{font-size:16px}
+body.tw-live .clue{font-size:15px;padding:8px 10px}
+body.tw-live .opts{gap:6px}
+body.tw-live .opt{padding:7px 10px;font-size:14px}
+body.tw-live .opt .k{width:22px;height:22px;font-size:12px}
+body.tw-live .chip{font-size:11px}
+body.tw-live .explain{padding:8px 10px;font-size:13px}
+body.tw-live .verdict{font-size:18px}
+
+/* streamer controls (Stream Manager) */
+body.tw-config{margin:0;padding:12px;font:14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;background:#18181b;color:#efeff1}
+.tw-config h1{font-size:17px;margin:0 0 10px}
+.tw-config h2{font-size:14px;margin:0 0 6px}
+.tw-box{background:#26262c;border-radius:8px;padding:10px 12px;margin:0 0 10px}
+.tw-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:4px 0}
+.tw-label{margin:8px 0 2px;font-size:12px;opacity:.75}
+.tw-muted{opacity:.75;margin:6px 0}
+.tw-btn{appearance:none;border:0;border-radius:6px;padding:8px 12px;min-height:36px;background:#3a3a44;color:#fff;font:inherit;font-weight:700;cursor:pointer}
+.tw-btn:hover:not(:disabled){background:#4a4a56}
+.tw-btn:disabled{opacity:.5;cursor:default}
+.tw-btn.on{background:#7c4dff}
+.tw-btn.go{background:#2fa84f}
+.tw-btn.tier-e{box-shadow:inset 0 -3px 0 #4fd06b}.tw-btn.tier-m{box-shadow:inset 0 -3px 0 #59a8ff}.tw-btn.tier-h{box-shadow:inset 0 -3px 0 #ffae3d}.tw-btn.tier-x{box-shadow:inset 0 -3px 0 #c56bff}
+.tw-btn:focus-visible{outline:2px solid #bf94ff;outline-offset:2px}
+.tw-pill{background:#3a3a44;border-radius:99px;padding:2px 8px;font-size:12px}
+.tw-time{margin-left:auto;font-weight:800;font-variant-numeric:tabular-nums}
+.tw-q{font-weight:700;margin:8px 0}
+.tw-ans{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.tw-ans li{display:flex;justify-content:space-between;gap:10px;padding:6px 8px;border-radius:6px;background:linear-gradient(90deg,#4a3b7a var(--p,0%),#303038 var(--p,0%))}
+.tw-ans li.ok{outline:2px solid #2fa84f}
+.tw-ans b{font-variant-numeric:tabular-nums;white-space:nowrap}
+.tw-check{display:flex;gap:8px;align-items:center;margin-top:8px}

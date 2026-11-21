@@ -18,3 +18,5 @@ sch=open(R+'out/schedule.json').read() if os.path.exists(R+'out/schedule.json') 
 assert '/*SCHED*/{}' in t and '/*PIN*/{}' in t and '/*DATA*/null' in t and '<!--VERSION-->' in t
 t=t.replace('/*SCHED*/{}',sch).replace('/*PIN*/{}',pin)
 open(R+'out/daily-poke-catch.html','w').write(t.replace('/*DATA*/null',d).replace('<!--VERSION-->',ver))
+# The Twitch extension loads the questions from the website (twitch-data.json), so new questions reach it without a new Twitch review.
+open(R+'out/twitch-data.json','w').write('{"data":'+d+',"pin":'+pin+',"sched":'+sch+',"ver":'+json.dumps(f'{cur} · update #{build}')+'}')
