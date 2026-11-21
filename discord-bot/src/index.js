@@ -454,7 +454,7 @@ async function api(env, req, path, ctx) {
 // Pasted secrets sometimes carry spaces or line breaks; clean them once.
 function clean(env) {
   const out = { ...env };
-  for (const k of ["DISCORD_APP_ID", "DISCORD_PUBLIC_KEY", "DISCORD_BOT_TOKEN", "DISCORD_CLIENT_SECRET", "SETUP_KEY", "TWITCH_EXT_CLIENT_ID", "TWITCH_EXT_SECRET", "TWITCH_EXT_OWNER_ID", "TWITCH_LIVE_CLIENT_ID", "TWITCH_LIVE_SECRET", "GOATCOUNTER_TOKEN", "GOATCOUNTER_DISCORD_URL", "GOATCOUNTER_TWITCH_URL"])
+  for (const k of ["DISCORD_APP_ID", "DISCORD_PUBLIC_KEY", "DISCORD_BOT_TOKEN", "DISCORD_CLIENT_SECRET", "SETUP_KEY", "TWITCH_EXT_CLIENT_ID", "TWITCH_EXT_SECRET", "TWITCH_EXT_OWNER_ID", "TWITCH_LIVE_CLIENT_ID", "TWITCH_LIVE_SECRET", "GOATCOUNTER_TOKEN", "GOATCOUNTER_URL"])
     if (typeof out[k] === "string") out[k] = out[k].trim().replace(/^["']|["']$/g, "");
   return out;
 }

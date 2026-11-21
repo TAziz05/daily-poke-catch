@@ -25,15 +25,12 @@ New or changed slash commands register themselves on the bot's hourly check, so 
 Progress on the website itself stays in that browser (use Sync devices there).
 
 ## Usage counts in GoatCounter (optional)
-The Worker counts Discord and Twitch use in two GoatCounter sites of their own, separate from the website's:
-Discord (commands like `/daily`, finished dailies, the Activity) and Twitch (panel, mobile view, Live box, streamer
-controls opened, live questions and answers). Each shows up under this game's path, like `/drop-in-daily/daily`.
-Players are counted by a scrambled ID, never their Discord or Twitch ID.
-To turn it on:
-1. In GoatCounter, add two sites (Settings → Sites): `taziz322-discord` and `taziz322-twitch`.
-2. Create an API key (username menu → API) with **Record pageviews**, with access to both sites.
-3. Add it to this Worker as a Secret named `GOATCOUNTER_TOKEN`. If you picked different site codes, also add
-   `GOATCOUNTER_DISCORD_URL` / `GOATCOUNTER_TWITCH_URL` (like `https://your-code.goatcounter.com`).
+The Worker counts Discord and Twitch use in the same GoatCounter site as the website (taziz322.goatcounter.com), on
+pages that show the source: `/daily-poke-catch/discord/...` (commands like `/daily`, finished dailies, the Activity) and
+`/daily-poke-catch/twitch/...` (panel, mobile view, Live box, streamer controls opened, live questions and answers).
+Titles start with "Discord:" or "Twitch:". Players are counted by a scrambled ID, never their Discord or Twitch ID.
+To turn it on: in GoatCounter open your username menu → **API** → create a key with **Record pageviews**, then add it
+to this Worker as a Secret named `GOATCOUNTER_TOKEN`.
 
 ## Setup (one time)
 This is a separate Discord app and Worker from Drop-In Daily's, so they don't share commands or leaderboards.
