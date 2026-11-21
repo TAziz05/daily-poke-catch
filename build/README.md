@@ -43,3 +43,10 @@ build with `REPLAN_TOMORROW=1 npm run build`.
 `pin.js`). No question repeats until every question in its tier has been served the same number of times. Within that, each
 kind of question (like "What type is X?") is spread evenly through the pool, each day gets at most one, then two, of the same
 kind or topic where possible, and never the same Pokémon twice. Commit `history.json`.
+
+## Look, secrets and achievements
+The block at the end of `template.html` (after the main script) adds the themed look, the animations, five hidden secrets,
+and the Achievements tab. It only wraps the game's own functions, so the game still works if the block is removed.
+- Milestones are worked out from saved results in this browser (`*:YYYY-MM-DD:*` keys and Endless stats).
+- Secrets, their counters and seen achievements are saved under `pokecatch:secrets`, `pokecatch:eggcounts` and `pokecatch:ach`,
+  so Sync devices carries them too.

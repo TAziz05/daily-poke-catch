@@ -101,7 +101,7 @@ async function verify(req, env) {
 // ---------- the Daily Catch inside Discord ----------
 function questionView(qs, i, day) {
   const q = qs[i];
-  const long = q.opts.some(o => o.length > 70);
+  const long = q.opts.some(o => o.length > 30);
   const desc = [`**${q.tier}**${q.tag ? ` · *${q.tag}*` : ""}`, "", ...(q.who ? ["**Who's that Pokémon?**"] : []), `### ${q.q}`];
   if (long) desc.push("", ...q.opts.map((o, k) => `**${LETTERS[k]}.** ${o}`));
   return {
@@ -115,7 +115,8 @@ function feedbackView(qs, i, day, pick, marks) {
   const desc = [`**${q.tier}**${q.tag ? ` · *${q.tag}*` : ""}`, "", ...(q.who ? ["**Who's that Pokémon?**"] : []), `### ${q.q}`, "",
     right ? `✅ **Gotcha!** ${q.opts[q.a]}` : `❌ **It broke free!** You picked ${q.opts[pick]}. The answer is **${q.opts[q.a]}**.`,
     "", q.e, "", src, "", grid(marks)];
-  const long = q.opts.some(o => o.length > 70);
+  const long = q.opts.some(o => o.length > 30);
+  if (long) desc.splice(desc.findIndex(l => /^(✅|❌) \*\*/.test(l)) + 1, 0, "", ...q.opts.map((o, k) => `${k === q.a ? "✅" : k === pick ? "❌" : "▫️"} **${LETTERS[k]}.** ${o}`));
   return {
     embeds: [{ title: `Daily Poké Catch · ${pretty(day)} · Question ${i + 1} of ${qs.length}`, description: desc.join("\n"), color: right ? GREEN : RED }],
     components: [

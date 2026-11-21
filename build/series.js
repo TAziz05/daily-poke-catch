@@ -215,7 +215,7 @@ GROUPS.push({id:"BASICS",ch:"Pokémon Basics",name:"Pokémon Basics",sub:"Series
  ["h","What do some Pokémon from the same species look like in Alola, Galar, Hisui and Paldea?","They have regional forms",["They're always Shiny","They're always Legendary","They're always babies"],"Regional forms like Alolan Vulpix have different looks and often different types.",B("Regional form")],
  ["m","What is Alolan Vulpix's type?","Ice",["Fire","Fairy","Water"],"Alolan Vulpix is Ice type; its evolution Alolan Ninetales is Ice/Fairy.",B("Vulpix (Pokémon)")],
  ["h","What type is Galarian Ponyta?","Psychic",["Fire","Fairy","Normal"],"Galarian Ponyta is Psychic; Galarian Rapidash is Psychic/Fairy.",B("Ponyta (Pokémon)")],
- ["h","Which Pokémon has an Alolan form that is Dark/Normal?","Rattata",["Meowth","Raticate","Zigzagoon"],"Alolan Rattata and Raticate are Dark/Normal.",B("Rattata (Pokémon)")],
+ ["h","Which Pokémon has an Alolan form that is Dark/Normal?","Rattata",["Meowth","Grimer","Zigzagoon"],"Its evolution Raticate shares the typing. Galarian Zigzagoon is Dark/Normal too, but that's a Galarian form, not an Alolan one.",B("Rattata (Pokémon)")],
  ["x","Which Alolan form of a Kanto Pokémon is Electric/Psychic?","Alolan Raichu",["Alolan Exeggutor","Alolan Golem","Alolan Marowak"],"Alolan Raichu surfs on its tail and is Electric/Psychic.",B("Raichu (Pokémon)")],
  ["h","Which Pokémon has an Alolan form with an extremely long neck?","Exeggutor",["Dugtrio","Marowak","Sandslash"],"Alolan Exeggutor is a tall Grass/Dragon type.",B("Exeggutor (Pokémon)")],
 ]});
