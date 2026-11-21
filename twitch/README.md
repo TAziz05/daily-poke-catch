@@ -43,8 +43,12 @@ The Twitch version has no creator code or other sponsorship line, because Twitch
    Open `https://SOMETHING.workers.dev/status` to check that all three show ✅.
 6. **Upload.** Zip the files inside `dist/` (`panel.html` should be at the top of the zip). In the Twitch console:
    Files → **Upload Version**, then move the version to **Hosted Test**.
+**Which slot?** Twitch lets an extension sit in only one desktop slot at a time (the mobile view is always on top of
+that), so both the component and the panel show the full game, with live questions popping up at the top. A
+**Component** is easier for viewers to spot while you're live; a **Panel** stays visible even when you're offline.
+
 7. **Try it on your channel.** Creator Dashboard → Extensions → find it under Invite Only / In Development → Install,
-   then activate the **Panel** and a **Component** slot. The Live Config controls show up in your Stream Manager as a
+   then activate it in a **Component** or **Panel** slot. The Live Config controls show up in your Stream Manager as a
    quick action. Components only show while you're live, so test the live play-along on a stream (an unlisted test
    stream is fine).
 8. **Submit for review** when it works. Twitch needs your channel live with the extension active during the review

@@ -56,6 +56,8 @@ g=CFG['game']
 w('panel.html',page(g,'tw-panel',markup,['fonts.css','game.css','twitch.css'],['config.js','loader.js']))
 # Mobile: the same game and live play-along, sized for the chat area of Twitch's phone apps (portrait and landscape).
 w('mobile.html',page(g,'tw-panel tw-mobile',markup,['fonts.css','game.css','twitch.css'],['config.js','loader.js']))
-w('live.html',page(g+' · Live','tw-live','<div id="live-slot"></div>',['fonts.css','game.css','twitch.css'],['config.js','live.js']))
+# Video component: the full game too, with live questions popping up at the top. Twitch lets an extension sit in only
+# one desktop slot at a time, so the component and the panel each carry everything.
+w('live.html',page(g,'tw-panel tw-component',markup,['fonts.css','game.css','twitch.css'],['config.js','loader.js']))
 w('live_config.html',page(g+' · Live controls','tw-config','<main id="cfg"></main>',['twitch.css'],['config.js','live_config.js']))
 print('twitch: built',len(os.listdir(DIST)),'files for',ebs if 'YOUR-WORKER' not in ebs else 'a placeholder server address (fill in twitch/ebs-url.txt)')
