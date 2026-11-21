@@ -34,7 +34,9 @@
     clearInterval(tick);
     const r = st.round;
     if (!r) {
-      slot.innerHTML = full ? card(`<span class="tw-kicker">${esc(C.game)} · Live play-along</span><p class="muted">Waiting for the streamer to start a question. Keep this open and it'll pop up here.</p>`, "tw-idle") : "";
+      slot.innerHTML = full ? card(`<span class="tw-kicker">Live trivia</span><h2 class="tw-idle-title">${esc(C.game)}</h2>
+        <p class="muted">The streamer's next question pops up right here. Answer before the timer runs out, then see how chat did.</p>
+        ${st.you && st.you.total ? `<p class="tw-score">You: ${st.you.right}/${st.you.total} this stream</p>` : ""}`, "tw-idle") : "";
       return;
     }
     const left = Math.max(0, Math.ceil((r.ends - now()) / 1000)), closed = r.revealed || left <= 0, picked = st.pick != null;

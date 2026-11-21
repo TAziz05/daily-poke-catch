@@ -3,10 +3,12 @@
 // Live play-along: the streamer starts a question, viewers answer before the timer runs out, the streamer reveals it,
 // and every viewer sees the right answer and how chat split. Updates reach viewers through Extension PubSub.
 //
+// Two extensions share this backend: the main one (panel + mobile, the full game) and the Live one (a video component
+// that shows only the current live question). Twitch lets an extension sit in just one slot, hence two.
 // Secrets (Cloudflare → Worker → Settings → Variables and Secrets):
-//   TWITCH_EXT_CLIENT_ID  the extension's Client ID
-//   TWITCH_EXT_SECRET     the extension's secret (the base64 string from the Twitch console)
-//   TWITCH_EXT_OWNER_ID   the Twitch user ID of the account that owns the extension
+//   TWITCH_EXT_CLIENT_ID, TWITCH_EXT_SECRET    the main extension's Client ID and secret (base64, from the Twitch console)
+//   TWITCH_LIVE_CLIENT_ID, TWITCH_LIVE_SECRET  the Live extension's Client ID and secret
+//   TWITCH_EXT_OWNER_ID                        the Twitch user ID of the account that owns both extensions
 import { GAME } from "./progress.js";
 
 const SESSION_HOURS = 12;   // "this stream" = answers in the last 12 hours
@@ -18,36 +20,45 @@ const fullSource = s => (typeof s === "string" && /^[bpwf]:/.test(s) ? SRC[s[0]]
 const b64 = s => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(s.length / 4) * 4, "=")), c => c.charCodeAt(0));
 const b64url = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const enc = s => new TextEncoder().encode(s);
-async function hmacKey(env, use) {
-  return crypto.subtle.importKey("raw", b64(env.TWITCH_EXT_SECRET), { name: "HMAC", hash: "SHA-256" }, false, [use]);
+async function hmacKey(secret, use) {
+  return crypto.subtle.importKey("raw", b64(secret), { name: "HMAC", hash: "SHA-256" }, false, [use]);
 }
-// Checks the JWT Twitch signed for this viewer or streamer. Returns its claims, or null.
+// The extensions this Worker serves (main and Live), each with its own Client ID and secret.
+export const extensions = env => [
+  { id: env.TWITCH_EXT_CLIENT_ID, secret: env.TWITCH_EXT_SECRET },
+  { id: env.TWITCH_LIVE_CLIENT_ID, secret: env.TWITCH_LIVE_SECRET },
+].filter(x => x.secret);
+// Checks the JWT Twitch signed for this viewer or streamer (from either extension). Returns its claims, or null.
 export async function verifyJwt(env, token) {
   const [h, p, s] = String(token || "").split(".");
-  if (!s || !env.TWITCH_EXT_SECRET) return null;
+  const exts = extensions(env);
+  if (!s || !exts.length) return null;
   try {
-    const ok = await crypto.subtle.verify("HMAC", await hmacKey(env, "verify"), b64(s), enc(h + "." + p));
+    let ok = false;
+    for (const x of exts) if (await crypto.subtle.verify("HMAC", await hmacKey(x.secret, "verify"), b64(s), enc(h + "." + p))) { ok = true; break; }
     if (!ok) return null;
     const claims = JSON.parse(new TextDecoder().decode(b64(p)));
     if (!claims.exp || claims.exp * 1000 < Date.now() || !claims.channel_id) return null;
     return claims;
   } catch (e) { return null; }
 }
-export async function signJwt(env, claims) {
+export async function signJwt(secret, claims) {
   const head = b64url(enc(JSON.stringify({ alg: "HS256", typ: "JWT" }))), body = b64url(enc(JSON.stringify(claims)));
-  const sig = await crypto.subtle.sign("HMAC", await hmacKey(env, "sign"), enc(head + "." + body));
+  const sig = await crypto.subtle.sign("HMAC", await hmacKey(secret, "sign"), enc(head + "." + body));
   return `${head}.${body}.${b64url(sig)}`;
 }
-// Sends a message to every viewer of the channel who has the extension open.
+// Sends a message to every viewer of the channel who has either extension open.
 async function broadcast(env, channel, message) {
-  if (!env.TWITCH_EXT_CLIENT_ID || !env.TWITCH_EXT_OWNER_ID) return;
-  const jwt = await signJwt(env, { exp: Math.floor(Date.now() / 1000) + 60, user_id: String(env.TWITCH_EXT_OWNER_ID), role: "external", channel_id: String(channel), pubsub_perms: { send: ["broadcast"] } });
-  const r = await fetch("https://api.twitch.tv/helix/extensions/pubsub", {
-    method: "POST",
-    headers: { authorization: "Bearer " + jwt, "client-id": env.TWITCH_EXT_CLIENT_ID, "content-type": "application/json" },
-    body: JSON.stringify({ target: ["broadcast"], broadcaster_id: String(channel), is_global_broadcast: false, message: JSON.stringify(message) }),
-  }).catch(e => ({ ok: false, status: 0, text: async () => String(e) }));
-  if (!r.ok) console.log("twitch pubsub", r.status, await r.text());
+  if (!env.TWITCH_EXT_OWNER_ID) return;
+  for (const x of extensions(env).filter(x => x.id)) {
+    const jwt = await signJwt(x.secret, { exp: Math.floor(Date.now() / 1000) + 60, user_id: String(env.TWITCH_EXT_OWNER_ID), role: "external", channel_id: String(channel), pubsub_perms: { send: ["broadcast"] } });
+    const r = await fetch("https://api.twitch.tv/helix/extensions/pubsub", {
+      method: "POST",
+      headers: { authorization: "Bearer " + jwt, "client-id": x.id, "content-type": "application/json" },
+      body: JSON.stringify({ target: ["broadcast"], broadcaster_id: String(channel), is_global_broadcast: false, message: JSON.stringify(message) }),
+    }).catch(e => ({ ok: false, status: 0, text: async () => String(e) }));
+    if (!r.ok) console.log("twitch pubsub", x.id, r.status, await r.text());
+  }
 }
 
 // ---------- questions ----------
@@ -132,7 +143,7 @@ export async function twitch(env, req, path, ctx, site) {
   const H = cors(req);
   const out = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { ...H, "content-type": "application/json", "cache-control": "no-store" } });
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: H });
-  if (!env.TWITCH_EXT_SECRET) return out({ error: "The Twitch extension secret isn't set on the Worker yet." }, 503);
+  if (!extensions(env).length) return out({ error: "The Twitch extension secret isn't set on the Worker yet." }, 503);
   const claims = await verifyJwt(env, (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, ""));
   if (!claims) return out({ error: "not signed in" }, 401);
   const channel = String(claims.channel_id), viewer = claims.opaque_user_id || "", isStreamer = claims.role === "broadcaster";

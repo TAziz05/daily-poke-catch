@@ -1,0 +1,14 @@
+/* Bundled because Twitch extensions can't load Google Fonts. All fonts are under the SIL Open Font License 1.1 (see OFL.txt). */
+@font-face{font-family:"Lilita One";font-style:normal;font-weight:400;font-display:swap;src:url("lilita-one-latin-400-normal.woff2") format("woff2")}
+@font-face{font-family:"Nunito";font-style:normal;font-weight:400;font-display:swap;src:url("nunito-latin-400-normal.woff2") format("woff2")}
+@font-face{font-family:"Nunito";font-style:normal;font-weight:600;font-display:swap;src:url("nunito-latin-600-normal.woff2") format("woff2")}
+@font-face{font-family:"Nunito";font-style:normal;font-weight:700;font-display:swap;src:url("nunito-latin-700-normal.woff2") format("woff2")}
+@font-face{font-family:"Nunito";font-style:normal;font-weight:800;font-display:swap;src:url("nunito-latin-800-normal.woff2") format("woff2")}
+@font-face{font-family:"Barlow Condensed";font-style:normal;font-weight:500;font-display:swap;src:url("barlow-condensed-latin-500-normal.woff2") format("woff2")}
+@font-face{font-family:"Barlow Condensed";font-style:normal;font-weight:600;font-display:swap;src:url("barlow-condensed-latin-600-normal.woff2") format("woff2")}
+@font-face{font-family:"Barlow Condensed";font-style:normal;font-weight:700;font-display:swap;src:url("barlow-condensed-latin-700-normal.woff2") format("woff2")}
+@font-face{font-family:"Pixelify Sans";font-style:normal;font-weight:400;font-display:swap;src:url("pixelify-sans-latin-400-normal.woff2") format("woff2")}
+@font-face{font-family:"Pixelify Sans";font-style:normal;font-weight:500;font-display:swap;src:url("pixelify-sans-latin-500-normal.woff2") format("woff2")}
+@font-face{font-family:"Pixelify Sans";font-style:normal;font-weight:600;font-display:swap;src:url("pixelify-sans-latin-600-normal.woff2") format("woff2")}
+@font-face{font-family:"Pixelify Sans";font-style:normal;font-weight:700;font-display:swap;src:url("pixelify-sans-latin-700-normal.woff2") format("woff2")}
+@font-face{font-family:"Press Start 2P";font-style:normal;font-weight:400;font-display:swap;src:url("press-start-2p-latin-400-normal.woff2") format("woff2")}

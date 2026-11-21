@@ -1,0 +1,1 @@
+window.TWITCH_CFG={"game": "Daily Poké Catch", "data": "https://taziz05.github.io/daily-poke-catch/twitch-data.json", "ebs": "https://daily-poke-catch-bot.towfiq-aziz11.workers.dev", "tiers": {"e": "Poké Ball · Easy", "m": "Great Ball · Medium", "h": "Ultra Ball · Hard", "x": "Master Ball · Impossible"}};

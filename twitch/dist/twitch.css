@@ -23,22 +23,22 @@ body.tw-mobile .opt{padding:9px 10px;min-height:44px}
 .opt.tw-res{position:relative;background:linear-gradient(90deg,rgba(124,77,255,.16) var(--p,0%),#fff var(--p,0%))}
 .opt.right.tw-res{background:linear-gradient(90deg,rgba(47,168,79,.28) var(--p,0%),#e6f6ea var(--p,0%))}
 .opt .tw-o{flex:1}
-.tw-pct{font-weight:800;font-variant-numeric:tabular-nums}
+.tw-pct{font-family:var(--body),system-ui,sans-serif;font-weight:800;font-variant-numeric:tabular-nums}
 .tw-score{font-weight:700;font-size:14px}
 .tw-err{color:#e2453c}
-body.tw-live{padding:8px;min-height:100vh;box-sizing:border-box}
-body.tw-live .tw-card{margin:0}
-body.tw-live .tw-idle{opacity:.92}
-body.tw-live{font-size:14px}
-body.tw-live .tw-card{padding:12px;gap:8px}
-body.tw-live .q{font-size:16px}
-body.tw-live .clue{font-size:15px;padding:8px 10px}
-body.tw-live .opts{gap:6px}
-body.tw-live .opt{padding:7px 10px;font-size:14px}
-body.tw-live .opt .k{width:22px;height:22px;font-size:12px}
-body.tw-live .chip{font-size:11px}
-body.tw-live .explain{padding:8px 10px;font-size:13px}
-body.tw-live .verdict{font-size:18px}
+/* Live extension: a video component that shows only the current question and fills its box
+   (set Zoom Pixels to 480 with a 3:4 aspect ratio, so this lays out at about 360x480). */
+body.tw-live{margin:0;padding:10px;height:100vh;box-sizing:border-box;display:flex;flex-direction:column;font-size:15px;overflow:auto}
+body.tw-live #live-slot{flex:1;display:flex;min-height:0}
+body.tw-live .tw-card{margin:0;flex:1;padding:14px;gap:9px;overflow:auto}
+body.tw-live .tw-idle{justify-content:center;align-items:center;text-align:center;gap:10px}
+.tw-idle-title{font-family:var(--display);font-weight:400;font-size:36px;line-height:1;margin:0;text-wrap:balance}
+body.tw-live .q{font-size:18px}
+body.tw-live .clue{font-size:16px;padding:10px 12px}
+body.tw-live .opts{gap:7px}
+body.tw-live .opt{padding:9px 11px;font-size:15px}
+body.tw-live .explain{padding:9px 11px;font-size:14px}
+body.tw-live .verdict{font-size:20px}
 
 /* streamer controls (Stream Manager) */
 body.tw-config{margin:0;padding:12px;font:14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;background:#18181b;color:#efeff1}

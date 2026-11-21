@@ -56,8 +56,14 @@ g=CFG['game']
 w('panel.html',page(g,'tw-panel',markup,['fonts.css','game.css','twitch.css'],['config.js','loader.js']))
 # Mobile: the same game and live play-along, sized for the chat area of Twitch's phone apps (portrait and landscape).
 w('mobile.html',page(g,'tw-panel tw-mobile',markup,['fonts.css','game.css','twitch.css'],['config.js','loader.js']))
-# Video component: the full game too, with live questions popping up at the top. Twitch lets an extension sit in only
-# one desktop slot at a time, so the component and the panel each carry everything.
-w('live.html',page(g,'tw-panel tw-component',markup,['fonts.css','game.css','twitch.css'],['config.js','loader.js']))
 w('live_config.html',page(g+' · Live controls','tw-config','<main id="cfg"></main>',['twitch.css'],['config.js','live_config.js']))
-print('twitch: built',len(os.listdir(DIST)),'files for',ebs if 'YOUR-WORKER' not in ebs else 'a placeholder server address (fill in twitch/ebs-url.txt)')
+
+# The Live extension (a separate Twitch extension, because one extension can sit in only one slot): a video component
+# that shows just the current live question, plus the same streamer controls. Zip the files inside ../twitch/dist-live.
+LIVE=ROOT+'twitch/dist-live/'
+if os.path.exists(LIVE): shutil.rmtree(LIVE)
+os.makedirs(LIVE)
+for f in ['config.js','live.js','live_config.js','twitch.css','game.css','live_config.html']: shutil.copy(DIST+f,LIVE+f)
+for f in os.listdir(ROOT+'twitch/fonts/'): shutil.copy(ROOT+'twitch/fonts/'+f,LIVE+f)
+open(LIVE+'live.html','w').write(page(g+' · Live','tw-live','<div id="live-slot"></div>',['fonts.css','game.css','twitch.css'],['config.js','live.js']))
+print('twitch: built',len(os.listdir(DIST)),'+',len(os.listdir(LIVE)),'files for',ebs if 'YOUR-WORKER' not in ebs else 'a placeholder server address (fill in twitch/ebs-url.txt)')
