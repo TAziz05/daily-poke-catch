@@ -502,6 +502,7 @@ export default {
       }
       if (path.startsWith("/twitch/")) return await twitch(env, req, path, ctx, SITE(env));
       if (path.startsWith("/api/")) return await api(env, req, path, ctx);
+      if (path.startsWith("/music/") && /^\/music\/[\w-]+\.mp3$/.test(path)) { const r = await fetch(SITE(env) + path, { cf: { cacheTtl: 86400, cacheEverything: true } }); return new Response(r.body, { status: r.status, headers: { "content-type": "audio/mpeg", "cache-control": "max-age=86400" } }); }
       if (path === "/activity.js") return new Response(ACTIVITY_JS, { headers: { "content-type": "text/javascript", "cache-control": "max-age=300" } });
       if (path === "/" || path === "/index.html") return await activityPage(env);
       return new Response("Not found", { status: 404 });

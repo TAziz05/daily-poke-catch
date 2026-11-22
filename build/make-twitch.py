@@ -34,6 +34,7 @@ w('game.css','\n'.join(s.strip() for s in styles)+'\n')
 w('game.js',game.strip()+'\n'); w('theme.js',scripts[1].strip()+'\n'); w('eggs.js',scripts[2].strip()+'\n'); w('sound.js',scripts[3].strip()+'\n')
 for f in ['loader.js','live.js','live_config.js','twitch.css']: shutil.copy(SRC+f,DIST+f)
 for f in os.listdir(ROOT+'twitch/fonts/'): shutil.copy(ROOT+'twitch/fonts/'+f,DIST+f)  # bundled fonts (Twitch blocks Google Fonts)
+if os.path.isdir(ROOT+'music'): shutil.copytree(ROOT+'music',DIST+'music',ignore=shutil.ignore_patterns('*.md'))  # recorded music loops
 w('config.js','window.TWITCH_CFG='+json.dumps({'game':CFG['game'],'data':CFG['site'].rstrip('/')+'/twitch-data.json','ebs':ebs,'tiers':CFG['tiers']},ensure_ascii=False)+';\n')
 HELPER='<script src="https://extension-files.twitch.tv/helper/v1/twitch-ext.min.js"></script>'
 def page(title,body_cls,body,css,js):
