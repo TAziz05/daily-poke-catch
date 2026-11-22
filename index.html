@@ -1047,7 +1047,7 @@ em.addEventListener("click",()=>{if(evolving||em.classList.contains("evolved"))r
    Off by default; the speaker button in the corner turns effects and music on, and the choice is saved on this device. ===== */
 (function(){
 "use strict";
-const G={"pfx": "pokecatch", "font": "\"Nunito\",system-ui,sans-serif", "bg": "#1b2a6b", "fg": "#fff", "edge": "#0c1640", "accent": "#ffcb05", "skipTap": ".egg-mon,.egg-dlg", "songs": {"lobby": "pkMenu", "match": "pkB", "og": "pk", "endless": "pkTown"}, "musicBase": "music/", "music": {"pkMenu": {"L": 6.857142857142857, "pad": 0.3, "gain": 1.02504}, "pkB": {"L": 8.000725623582767, "pad": 0.3, "gain": 0.45964}, "pk": {"L": 5.783219954648526, "pad": 0.3, "gain": 0.65187}, "pkTown": {"L": 9.23138321995465, "pad": 0.3, "gain": 0.37251}}};
+const G={"pfx": "pokecatch", "font": "\"Nunito\",system-ui,sans-serif", "bg": "#1b2a6b", "fg": "#fff", "edge": "#0c1640", "accent": "#ffcb05", "skipTap": ".egg-mon,.egg-dlg", "songs": {"lobby": "pkMenu", "match": "pkB", "og": "pk", "endless": "pkTown"}};
 const noop=()=>{};
 const SND={play:noop,music:noop,on:()=>false};window.SND=SND;
 const AC=typeof window!=="undefined"&&(window.AudioContext||window.webkitAudioContext);
@@ -1228,31 +1228,20 @@ const SONGS={
    if(s%2===0)noise({t,dur:.02,vol:.025,freq:9000,bus:musBus});
  }}
 };
-let want="lobby",cur=null,timer=null,step=0,nextT=0,src=null;
-/* Songs play from small recorded loops of the same code-made music (smoother on slow devices). Until a file has loaded,
-   or if it can't load, the song is made live by the sequencer instead. */
-// Test switch: the recorded loops are only used with ?music=files in the address; everyone else gets the live code music.
-const FILEMODE=/[?&]music=files\b/.test(location.search);
-const FILES=FILEMODE?(G.music||{}):{},BUF={},LOADING={};
-const decode=ab=>new Promise((res,rej)=>{const p=A.decodeAudioData(ab,res,rej);if(p&&p.then)p.then(res,rej)});
-function load(k){if(!FILES[k]||BUF[k]||LOADING[k])return LOADING[k];
-  LOADING[k]=fetch(G.musicBase+k+".mp3").then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(decode).then(b=>{BUF[k]=b;if(cur===k&&!src)startSong(k)}).catch(noop);return LOADING[k]}
-function preload(){if(!A)return;const ks=[...new Set(Object.values(G.songs))];ks.sort((a,b)=>(b===G.songs[want])-(a===G.songs[want]));ks.reduce((p,k)=>p.then(()=>load(k)),Promise.resolve())}
+let want="lobby",cur=null,timer=null,step=0,nextT=0;
 function schedule(){const S=SONGS[cur];if(!S)return;const dt=60/S.bpm/4,now=A.currentTime;
   if(nextT<now+.02){const skip=Math.ceil((now+.05-nextT)/dt);step=(step+skip)%S.steps;nextT+=skip*dt}
   while(nextT<now+.6){try{S.play(step,nextT-now)}catch(e){}step=(step+1)%S.steps;nextT+=dt}}
 function startSong(k){
-  clearInterval(timer);timer=null;if(src){const s=src;src=null;try{s.stop(A.currentTime+1.2)}catch(e){}}
+  clearInterval(timer);timer=null;
   if(musBus&&musBus!==musRoot){const g=musBus;g.gain.setTargetAtTime(0,A.currentTime,.12);setTimeout(()=>{try{g.disconnect()}catch(e){}},1500)}
   musBus=musRoot;cur=k;delete SONGS.pad;if(!k)return;
   musBus=A.createGain();musBus.gain.setValueAtTime(.0001,A.currentTime);musBus.gain.setTargetAtTime(1,A.currentTime,.2);musBus.connect(musRoot);
-  const f=FILES[k],b=BUF[k];
-  if(f&&b){src=A.createBufferSource();src.buffer=b;src.loop=true;src.loopStart=f.pad;src.loopEnd=f.pad+f.L;const g=A.createGain();g.gain.value=f.gain;src.connect(g);g.connect(musBus);src.start(A.currentTime+.03,f.pad);return}
-  load(k);step=0;nextT=A.currentTime+.12;timer=setInterval(schedule,90)}
+  step=0;nextT=A.currentTime+.12;timer=setInterval(schedule,90)}
 function applyMusic(){const k=st.mu&&A&&A.state==="running"&&!document.hidden&&Date.now()>=holdUntil?(G.songs[want]||null):null;if(k!==cur)startSong(k)}
-function wake(){if(!(st.fx||st.mu))return;ctx();if(st.mu)preload();if(A.state!=="running")A.resume().then(applyMusic,noop);else applyMusic()}
+function wake(){if(!(st.fx||st.mu))return;ctx();if(A.state!=="running")A.resume().then(applyMusic,noop);else applyMusic()}
 SND.on=()=>st.fx;
-SND.state=()=>({music:cur,want,audio:A?A.state:"none",file:!!src});
+SND.state=()=>({music:cur,want,audio:A?A.state:"none"});
 SND.play=(name,...a)=>{if(!st.fx||document.hidden)return;const f=D[name];if(!f)return;ctx();if(A.state!=="running")A.resume().catch(noop);try{f(...a)}catch(e){}};
 SND.music=k=>{want=k;if(A)applyMusic()};
 SND.hold=ms=>{holdUntil=Date.now()+ms;if(A)applyMusic();setTimeout(()=>{if(A)applyMusic()},ms+50)};
@@ -1287,7 +1276,7 @@ body.tw-panel #snd{bottom:8px;right:8px}body.tw-panel #snd-btn{width:34px;height
 document.head.appendChild(css);
 const box=document.createElement("div");box.id="snd";
 box.innerHTML=`<button id="snd-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Sound settings"></button>
-<div id="snd-pop" hidden><label>Sound effects <input type="checkbox" id="snd-fx"></label><label>Music <input type="checkbox" id="snd-mu"></label><label class="vol">Volume <input type="range" id="snd-vol" min="0" max="1" step="0.05" aria-label="Volume"></label>${FILEMODE?'<em style="display:block;font-size:12px;opacity:.8;margin-top:6px">Test: recorded music</em>':''}</div>`;
+<div id="snd-pop" hidden><label>Sound effects <input type="checkbox" id="snd-fx"></label><label>Music <input type="checkbox" id="snd-mu"></label><label class="vol">Volume <input type="range" id="snd-vol" min="0" max="1" step="0.05" aria-label="Volume"></label></div>`;
 document.body.appendChild(box);
 const btn=box.querySelector("#snd-btn"),pop=box.querySelector("#snd-pop"),fx=box.querySelector("#snd-fx"),mu=box.querySelector("#snd-mu"),vol=box.querySelector("#snd-vol");vol.value=st.vol;
 vol.oninput=()=>{st.vol=+vol.value;if(master)master.gain.setTargetAtTime(.9*st.vol,A.currentTime,.03)};vol.onchange=()=>{save();SND.play("tap")};
