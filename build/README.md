@@ -35,6 +35,8 @@ Only push straight to `main` if TAziz322 asks for it.
 `pin.js` (part of `npm run build`) reads the live site from `origin/main` and freezes yesterday's, today's and tomorrow's
 questions (Eastern) exactly as players see them now. New questions only start appearing in daily sets from the day after
 tomorrow, so a publish never swaps a day someone has already played. Other modes use new questions right away.
+Wording fixes still reach frozen days: if a pinned question's id, answer and options are unchanged, it picks up the
+current question text, explanation and source.
 To re-plan tomorrow as well (only for a release that lands before anyone has played it, like the midnight release),
 build with `REPLAN_TOMORROW=1 npm run build`.
 

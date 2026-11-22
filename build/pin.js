@@ -28,6 +28,13 @@ for(let t=Math.min(first,t0-DAY);t<=t0+DAY;t+=DAY){
   if(t>=t0-DAY)pins[k]=p;
   if(!history[k]||t>=t0-DAY)history[k]=Object.fromEntries(Object.entries(p).map(([s,qs])=>[s,qs.map(key)]));
 }
+// Wording fixes reach frozen days too: a pinned question picks up the current question text,
+// explanation and source when its id, answer and options are unchanged (so the game is the same).
+try{const cur=Object.fromEntries(JSON.parse(fs.readFileSync(__dirname+"/out/data.json","utf8")).questions.map(q=>[q.id,q]));
+  let fixed=0;
+  for(const p of Object.values(pins))for(const qs of Object.values(p))for(const q of qs){const c=cur[q.id];
+    if(c&&c.a===q.a&&[...c.w].sort().join("|")===[...q.w].sort().join("|")&&(c.q!==q.q||c.e!==q.e||c.s!==q.s)){q.q=c.q;q.e=c.e;q.s=c.s;fixed++}}
+  if(fixed)console.log("pin: updated wording on",fixed,"frozen question(s)");}catch(e){}
 fs.writeFileSync(out,JSON.stringify(pins));
 fs.writeFileSync(histFile,JSON.stringify(Object.fromEntries(Object.entries(history).sort()),null,0).replace(/\],"/g,'],\n"'));
 console.log("pin: froze",Object.keys(pins).join(", ")||"nothing","| history has",Object.keys(history).length,"days");

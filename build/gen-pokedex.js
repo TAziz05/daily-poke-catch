@@ -75,6 +75,9 @@ const add = (grp, tier, q, a, w, e, s, f, mon) => { if (!w || w.length !== 3 || 
 
 const allTypeCombos = [...new Set(DEX.map(typeStr))];
 const genus = p => p.genus.replace(/ Pokémon$/, "");
+// Arcanine's official category is "Legendary Pokémon", but it isn't a Legendary. Spell that out
+// wherever the category is shown so it can't be read as its status.
+const statusLike = p => p.genus === "Legendary Pokémon" && !p.legendary;
 const genusCount = {}; for (const p of DEX) genusCount[p.genus] = (genusCount[p.genus] || 0) + 1;
 const children = {}; for (const p of DEX) if (p.from_) (children[p.from_] ??= []).push(p.id);
 const allAbilities = [...new Set(DEX.flatMap(p => [...p.abilities, ...p.hidden]))];
@@ -110,11 +113,11 @@ for (const p of DEX) {
   if (genusCount[p.genus] === 1) {
     const pool = sameGen.filter(x => genusCount[x.genus] === 1 && x.types.some(t => p.types.includes(t))).map(x => x.genus);
     const w = pickWrong(p.genus, pool.length >= 3 ? pool : sameGen.map(x => x.genus), 3, "gen2" + p.id);
-    add(grp, tierAt(P >= 3 ? 1 : P === 2 ? 2 : 2 + (P === 0)), `What is ${S}'s Pokédex category?`, p.genus, w, `The Pokédex lists ${S} as the ${p.genus}.`, src, "genus", p.id);
+    add(grp, tierAt(P >= 3 ? 1 : P === 2 ? 2 : 2 + (P === 0)), `What is ${S}'s Pokédex category?`, p.genus, w, `The Pokédex lists ${S} as the ${p.genus}.` + (statusLike(p) ? ` Despite the name, it isn't a Legendary Pokémon.` : ""), src, "genus", p.id);
     // reverse, only for well-known ones
     if (P >= 2) {
       const wn = pickWrong(S, sameGen.filter(x => x.types.some(t => p.types.includes(t)) && x.genus !== p.genus).map(x => x.name), 3, "genr" + p.id);
-      add(grp, tierAt(P === 3 ? 1 : 2), `Which Pokémon is known as the ${p.genus}?`, S, wn, `${S} is the ${p.genus}.`, src, "genusr", p.id);
+      add(grp, tierAt(P === 3 ? 1 : 2), statusLike(p) ? `Which Pokémon's Pokédex category is the ${p.genus}?` : `Which Pokémon is known as the ${p.genus}?`, S, wn, `${S} is the ${p.genus}.` + (statusLike(p) ? ` That's only its category: it isn't a Legendary Pokémon.` : ""), src, "genusr", p.id);
     }
   }
   // Abilities
@@ -215,10 +218,10 @@ for (const p of DEX) {
     const ty = typeWord(p), tier = tierAt(P === 3 ? 0 : P === 2 ? 1 : P === 1 ? 2 : 2 + (hash("w" + p.id) % 2));
     let clue, fits;
     if (tier === "e") {
-      clue = `I'm the ${p.genus}, ${an(ty)}-type Pokémon.` + (kids.length ? ` I evolve into ${kids.join(" or ")}.` : pre ? ` I evolve from ${pre}.` : p.legendary ? " I'm a Legendary Pokémon." : p.mythical ? " I'm a Mythical Pokémon." : "");
+      clue = (statusLike(p) ? `My Pokédex category is the ${p.genus}, though I'm not actually a Legendary. I'm ${an(ty)}-type Pokémon.` : `I'm the ${p.genus}, ${an(ty)}-type Pokémon.`) + (kids.length ? ` I evolve into ${kids.join(" or ")}.` : pre ? ` I evolve from ${pre}.` : p.legendary ? " I'm a Legendary Pokémon." : p.mythical ? " I'm a Mythical Pokémon." : "");
       fits = x => x.genus === p.genus && typeWord(x) === ty;
     } else if (tier === "m") {
-      clue = `I'm the ${p.genus}, ${an(ty)}-type Pokémon first found in the ${REGION[p.gen]} region (Generation ${ROMAN[p.gen]}).`;
+      clue = statusLike(p) ? `My Pokédex category is the ${p.genus}, though I'm not actually a Legendary. I'm ${an(ty)}-type Pokémon first found in the ${REGION[p.gen]} region (Generation ${ROMAN[p.gen]}).` : `I'm the ${p.genus}, ${an(ty)}-type Pokémon first found in the ${REGION[p.gen]} region (Generation ${ROMAN[p.gen]}).`;
       fits = x => x.genus === p.genus;
     } else if (tier === "h") {
       clue = `I'm ${an(p.color)}, ${ty}-type Pokémon from Generation ${ROMAN[p.gen]}. My category is the ${p.genus}.`;
@@ -231,7 +234,7 @@ for (const p of DEX) {
     let pool = DEX.filter(x => x.id !== p.id && !fits(x) && x.genus !== p.genus && x.types.some(t => p.types.includes(t)) && Math.abs(x.gen - p.gen) <= 1);
     if (pool.length < 3) pool = DEX.filter(x => x.id !== p.id && !fits(x));
     const w = pickWrong(S, pool.map(x => x.name), 3, "who" + p.id);
-    if (w) WHO.push([tier, clue, S, w, `It's ${S}, the ${p.genus} (${num(p.id)}), ${an(ty)}-type Pokémon from Generation ${ROMAN[p.gen]}.`, src, "G" + p.gen]);
+    if (w) WHO.push([tier, clue, S, w, `It's ${S}, the ${p.genus} (${num(p.id)}), ${an(ty)}-type Pokémon from Generation ${ROMAN[p.gen]}.` + (statusLike(p) ? ` "Legendary Pokémon" is only its category; it isn't a Legendary.` : ""), src, "G" + p.gen]);
   }
 }
 
