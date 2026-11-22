@@ -55,16 +55,16 @@ function next(){clearTimeout(dTimer);const m=queue.shift();if(!m)return;
   d.innerHTML=`<b>${esc(m[0])}</b><p><span class="sr">${esc(m[1])}</span><span aria-hidden="true"></span></p>${m[2]}<span class="arrow"></span>`;document.body.appendChild(d);dEl=d;
   const vis=d.querySelector("p span[aria-hidden]");let i=0,tm=null;
   const finish=()=>{clearInterval(tm);tm=null;vis.textContent=m[1]};
-  if(R)finish();else tm=setInterval(()=>{vis.textContent=m[1].slice(0,++i);if(i>=m[1].length)finish()},22);
+  if(R)finish();else tm=setInterval(()=>{vis.textContent=m[1].slice(0,++i);if(i%2===0)window.SND&&SND.play("type");if(i>=m[1].length)finish()},22);
   const close=()=>{if(dEl!==d)return;d.classList.add("out");setTimeout(()=>d.remove(),200);dEl=null;next()};
   d.onclick=e=>{if(e.target.closest("a"))return;if(tm)finish();else close()};dTimer=setTimeout(close,9000)}
 const fact=()=>{const pool=Q.filter(q=>(q.t==="e"||q.t==="m")&&!q.clue&&q.q.length<120&&!/these|this one/i.test(q.q)),q=pool[Math.random()*pool.length|0];
   return [`${q.q} ${q.a}.`,`<span class="src">${srcLink(q.s)}</span>`]};
-const playing=()=>!!app.querySelector(".opt:not(:disabled)");
+const playing=()=>!!app.querySelector(".opt");
 
 const medal=(on,kind)=>on?orb(kind==="secret"?"x":"e",32):`<svg width="32" height="32" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="8.5" fill="#efe8d8" stroke="#b9b2a0" stroke-width="1.6" stroke-dasharray="2.4 1.6"/>${kind==="secret"?`<text x="10" y="13.6" text-anchor="middle" font-size="10" font-weight="700" fill="#9a937f">?</text>`:`<path d="M7.5 9.5v-2a2.5 2.5 0 0 1 5 0v2M7 9.5h6v4.5H7z" fill="none" stroke="#9a937f" stroke-width="1.3"/>`}</svg>`;
 const ACH=makeAch({pfx:"pokecatch",dayRe:/^pokecatch1:(\d{4}-\d{2}-\d{2}):(main|e|m|h|x)$/,eggs:EGGS,medal,
-  notify:(t,txt)=>{queue.push([t+"!",txt,""]);if(!dEl)next()},
+  notify:(t,txt)=>{queue.push([t+"!",txt,""]);if(!dEl)next();const sec=t.startsWith("Secret");setTimeout(()=>window.SND&&SND.play(sec?"secret":"achievement"),sec?700:0)},
   miles:[
    ["first","First Catch","Finish a Daily Catch",s=>[s.mains,1]],
    ["party","Full Party","Play all five daily sets in one day",s=>[s.fullDay,1]],
@@ -88,32 +88,41 @@ function sparkle(x,y,n=6){if(R)return;for(let k=0;k<n;k++){const s=document.crea
 
 /* 1 + 2. tall grass: rustle, wild encounters, shinies */
 let mon=null;
-function rustle(x){const y=innerHeight-60;if(!R)for(let k=0;k<5;k++){const l=document.createElement("span");l.className="egg-leaf";l.style.left=(x-10+Math.random()*20)+"px";l.style.top=y+"px";document.body.appendChild(l);
+function rustle(x){window.SND&&SND.play("rustle");const y=innerHeight-60;if(!R)for(let k=0;k<5;k++){const l=document.createElement("span");l.className="egg-leaf";l.style.left=(x-10+Math.random()*20)+"px";l.style.top=y+"px";document.body.appendChild(l);
   l.animate([{transform:"translate(0,0) rotate(0)"},{transform:`translate(${(Math.random()-.5)*60}px,${-30-Math.random()*40}px) rotate(${Math.random()*360}deg)`,opacity:0}],{duration:600}).onfinish=()=>l.remove()}}
 function encounter(x){
   if(mon)return;const shiny=Math.random()<1/12;
   const b=document.createElement("button");b.type="button";b.className="egg-mon";b.setAttribute("aria-label",shiny?"A shiny wild question. Tap to catch":"A wild question. Tap to catch");
-  b.innerHTML=sprite(shiny?"#e0a92a":"#5b8f5a");b.style.left=Math.max(4,Math.min(innerWidth-52,x-23))+"px";document.body.appendChild(b);mon=b;
+  b.innerHTML=sprite(shiny?"#e0a92a":"#5b8f5a");b.style.left=Math.max(4,Math.min(innerWidth-52,x-23))+"px";document.body.appendChild(b);mon=b;window.SND&&SND.play(shiny?"shiny":"wild");
   const dir=x<innerWidth/2?1:-1,dist=dir*(innerWidth*.5);
   if(shiny)setTimeout(()=>{const r=b.getBoundingClientRect();sparkle(r.left+23,r.top+20,8)},250);
   const run=b.animate(R?[{opacity:1},{opacity:1}]:[{transform:"translate(0,40px)"},{transform:"translate(0,0)",offset:.08},...Array.from({length:10},(_,k)=>({transform:`translate(${dist*(k+1)/10}px,${k%2?0:-10}px)`,offset:.12+.088*(k+1)}))],{duration:7000,easing:"steps(24)",fill:"forwards"});
-  run.onfinish=()=>{b.remove();if(mon===b)mon=null};
-  b.onclick=()=>{run.pause();b.disabled=true;const r=b.getBoundingClientRect();
+  run.onfinish=()=>hideInGrass(b);setTimeout(()=>{if(b.isConnected&&!b.disabled)hideInGrass(b)},R?6900:6600);  // duck into the grass just before the walk ends
+  b.onclick=()=>{run.pause();b.disabled=true;window.SND&&SND.play("throw");const r=b.getBoundingClientRect();
     const o=document.createElement("span");o.style.cssText=`position:fixed;left:${r.left+11}px;top:${r.top+11}px;width:24px;height:24px;z-index:991;pointer-events:none`;o.innerHTML=orb(shiny?"x":"e",24);
     if(!R){b.animate([{transform:getComputedStyle(b).transform+" scale(1)",filter:"brightness(1)"},{transform:getComputedStyle(b).transform+" scale(0)",filter:"brightness(3)"}],{duration:300,fill:"forwards"});
-      setTimeout(()=>{document.body.appendChild(o);o.animate([{transform:"rotate(0)"},{transform:"rotate(-24deg)"},{transform:"rotate(24deg)"},{transform:"rotate(0)"}],{duration:380,iterations:3}).onfinish=()=>{sparkle(r.left+23,r.top+23,4);setTimeout(()=>o.remove(),300)}},300)}
-    setTimeout(()=>{b.remove();if(mon===b)mon=null;const [t,src]=fact();
+      setTimeout(()=>{[0,380,760].forEach(d=>setTimeout(()=>window.SND&&SND.play("wobble"),d));document.body.appendChild(o);o.animate([{transform:"rotate(0)"},{transform:"rotate(-24deg)"},{transform:"rotate(24deg)"},{transform:"rotate(0)"}],{duration:380,iterations:3}).onfinish=()=>{sparkle(r.left+23,r.top+23,4);setTimeout(()=>o.remove(),300)}},300)}
+    setTimeout(()=>{window.SND&&SND.play("correct");b.remove();if(mon===b)mon=null;const [t,src]=fact();
       say(shiny?"Gotcha! A shiny!":"Gotcha!",`${shiny?"The shiny":"The wild"} question had a fact: ${t}`,src);secret("grass");if(shiny)secret("shiny")},R?0:1600)};
 }
 /* occasional wanderer when you're not mid-question */
 function wander(){if(!playing()&&!document.hidden)encounter(Math.random()<.5?20:innerWidth-20);setTimeout(wander,45000+Math.random()*30000)}
 setTimeout(wander,12000);
 
+/* no wild questions in the grass during a game: one that's running away is cleared when a question starts */
+function hideMon(){if(mon&&!mon.disabled)hideInGrass(mon)}
+// a wild question that wasn't caught ducks back into the tall grass
+function hideInGrass(b){if(!b.isConnected)return;b.disabled=true;const r=b.getBoundingClientRect();rustle(r.left+r.width/2);
+  b.getAnimations().forEach(x=>{try{if(x.commitStyles)x.commitStyles();x.cancel()}catch(e){}});   // stop walking where it stands, then duck down from there
+  if(!R)b.animate([{transform:"translateY(0)"},{transform:"translateY(-6px)",offset:.3},{transform:"translateY(46px)"}],{duration:420,easing:"steps(6)",fill:"forwards",composite:"add"});
+  const a=b.animate([{opacity:1},{opacity:1,offset:.4},{opacity:0}],{duration:R?10:420,fill:"forwards"});
+  a.onfinish=()=>{b.remove();if(mon===b)mon=null}}
+
 /* shiny foe in battles, 1 in 64 */
 const _q2=question;
-question=function(){_q2();if(Math.random()<1/64)setTimeout(shinyFoe,R?0:1500)};
-const _eq2=endlessQ;endlessQ=function(){_eq2();if(Math.random()<1/64)setTimeout(shinyFoe,R?0:600)};
-function shinyFoe(){const f=document.getElementById("pk-foe");if(!f)return;
+question=function(){_q2();hideMon();if(Math.random()<1/64)setTimeout(shinyFoe,R?0:1500)};
+const _eq2=endlessQ;endlessQ=function(){_eq2();hideMon();if(Math.random()<1/64)setTimeout(shinyFoe,R?0:600)};
+function shinyFoe(){const f=document.getElementById("pk-foe");if(!f)return;window.SND&&SND.play("shiny");
   f.querySelectorAll("rect").forEach(r=>{const c=r.getAttribute("fill");if(c==="#4a4f86")r.setAttribute("fill","#e0a92a");else if(c==="#6a70b0")r.setAttribute("fill","#ffe27a")});
   const r=f.getBoundingClientRect();sparkle(r.left+r.width/2,r.top+r.height/2,10);
   const nm=app.querySelector(".pk-box.e .nm span");if(nm)nm.textContent+=" ★";secret("shiny")}
@@ -123,16 +132,16 @@ document.addEventListener("click",e=>{
   if(e.target.closest("button,a,input,select,textarea,label,.panel,.tabs,.egg-dlg,.emblem,#date"))return;
   const moon=document.querySelector(".pk-moon").getBoundingClientRect();
   if(e.clientX>=moon.left-10&&e.clientX<=moon.right+10&&e.clientY>=moon.top-10&&e.clientY<=moon.bottom+10){shootingStar();return}
-  if(e.clientY>innerHeight-96){rustle(e.clientX);if(Math.random()<.35||!ACH.has("grass")&&Math.random()<.6)setTimeout(()=>encounter(e.clientX),250)}
+  if(e.clientY>innerHeight-96){rustle(e.clientX);if(!playing()&&(Math.random()<.35||!ACH.has("grass")&&Math.random()<.6))setTimeout(()=>encounter(e.clientX),250)}
 });
 
 /* 3. wishing star */
-function shootingStar(){const s=document.createElement("div");s.className="egg-star";const y=20+Math.random()*innerHeight*.25;s.style.top=y+"px";s.style.left="-140px";document.body.appendChild(s);
+function shootingStar(){window.SND&&SND.play("star");const s=document.createElement("div");s.className="egg-star";const y=20+Math.random()*innerHeight*.25;s.style.top=y+"px";s.style.left="-140px";document.body.appendChild(s);
   s.animate([{transform:"translate(0,0) rotate(12deg)",opacity:0},{opacity:1,offset:.15},{transform:`translate(${innerWidth+280}px,${innerWidth*.22}px) rotate(12deg)`,opacity:0}],{duration:R?10:1100,easing:"ease-in"}).onfinish=()=>s.remove();
   setTimeout(()=>{say("Shooting star",`You made a wish under a ${document.querySelector(".pk-moon").dataset.phase||"bright"} moon. May every wild question stay in the ball today.`);secret("moon")},R?0:900)}
 
 /* 4. retro mode: Konami code or hold the date */
-function retro(){const on=document.body.classList.toggle("pk-retro");say("Retro mode",on?"The screen switched to four shades of green. Do it again to switch back.":"Colour is back on.");if(on)secret("retro")}
+function retro(){const on=document.body.classList.toggle("pk-retro");window.SND&&(SND.retro(on),SND.play(on?"retro":"colour"));say("Retro mode",on?"The screen switched to four shades of green. Do it again to switch back.":"Colour is back on.");if(on)secret("retro")}
 const CODE=["ArrowUp","ArrowUp","ArrowDown","ArrowDown","ArrowLeft","ArrowRight","ArrowLeft","ArrowRight","b","a"];let keys=[];
 addEventListener("keydown",e=>{keys.push(e.key.length===1?e.key.toLowerCase():e.key);keys=keys.slice(-CODE.length);if(keys.join()===CODE.join()){keys=[];retro()}});
 const date=document.getElementById("date");let holdT;date.style.userSelect="none";date.style.webkitUserSelect="none";
@@ -146,7 +155,7 @@ date.addEventListener("contextmenu",e=>e.preventDefault());
 const em=document.querySelector(".emblem");let taps=0,tapT,evolving=false;
 em.addEventListener("click",()=>{if(evolving||em.classList.contains("evolved"))return;clearTimeout(tapT);tapT=setTimeout(()=>taps=0,2500);
   if(!R)em.animate([{transform:"scale(1)"},{transform:"scale(1.15)"},{transform:"scale(1)"}],{duration:200});
-  if(++taps<5)return;evolving=true;em.classList.add("fast");say("What?","The emblem is evolving!");
+  if(++taps<5){window.SND&&SND.play("spin");return}evolving=true;window.SND&&SND.play("evolve");em.classList.add("fast");say("What?","The emblem is evolving!");
   if(!R)em.animate(Array.from({length:12},(_,k)=>({filter:k%2?"brightness(3)":"brightness(1)"})),{duration:2200});
   setTimeout(()=>{em.classList.remove("fast");em.classList.add("evolved");const r=em.getBoundingClientRect();sparkle(r.left+r.width/2,r.top+r.height/2,10);
     say("Congratulations!","Your emblem evolved into a glowing emblem! It stays that way until you reload.");secret("evolve");evolving=false},R?0:2300)});

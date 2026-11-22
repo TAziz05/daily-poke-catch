@@ -15,7 +15,7 @@ t=open(R+'template.html').read()
 t=re.sub(r'<link [^>]*>\s*','',t)                      # no outside fonts inside Twitch
 styles=re.findall(r'<style>(.*?)</style>',t,re.S)
 scripts=re.findall(r'<script>(.*?)</script>',t,re.S)
-assert len(scripts)==3,f'expected 3 scripts in template.html, found {len(scripts)}'
+assert len(scripts)==4,f'expected 4 scripts in template.html, found {len(scripts)}'
 markup=t[t.index('</style>')+len('</style>'):t.index('<script>')]
 markup=re.sub(r'<style>.*?</style>','',markup,flags=re.S).strip()
 markup=markup.replace('<!--VERSION-->','<div class="ver"><span id="ver-label"></span></div>')
@@ -31,7 +31,7 @@ if os.path.exists(DIST): shutil.rmtree(DIST)
 os.makedirs(DIST)
 w=lambda name,text: open(DIST+name,'w').write(text)
 w('game.css','\n'.join(s.strip() for s in styles)+'\n')
-w('game.js',game.strip()+'\n'); w('theme.js',scripts[1].strip()+'\n'); w('eggs.js',scripts[2].strip()+'\n')
+w('game.js',game.strip()+'\n'); w('theme.js',scripts[1].strip()+'\n'); w('eggs.js',scripts[2].strip()+'\n'); w('sound.js',scripts[3].strip()+'\n')
 for f in ['loader.js','live.js','live_config.js','twitch.css']: shutil.copy(SRC+f,DIST+f)
 for f in os.listdir(ROOT+'twitch/fonts/'): shutil.copy(ROOT+'twitch/fonts/'+f,DIST+f)  # bundled fonts (Twitch blocks Google Fonts)
 w('config.js','window.TWITCH_CFG='+json.dumps({'game':CFG['game'],'data':CFG['site'].rstrip('/')+'/twitch-data.json','ebs':ebs,'tiers':CFG['tiers']},ensure_ascii=False)+';\n')

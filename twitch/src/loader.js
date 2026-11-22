@@ -9,7 +9,7 @@
     .then(async g => {
       window.__G = g;
       const v = document.getElementById("ver-label"); if (v) v.textContent = g.ver || "";
-      for (const f of ["game.js", "theme.js", "eggs.js", "live.js"]) await load(f);
+      for (const f of ["game.js", "theme.js", "eggs.js", "sound.js", "live.js"]) await load(f);
     })
     .catch(fail);
 })();

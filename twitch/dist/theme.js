@@ -36,9 +36,9 @@ function type(el,text,ms=22){
   if(R||!ms){vis.textContent=text;return Promise.resolve()}
   box.classList.add("typing");let i=0,tm;
   return new Promise(res=>{const done=()=>{clearInterval(tm);vis.textContent=text;box.classList.remove("typing");typing=null;res()};
-    typing={done};tm=setInterval(()=>{i+=1;vis.textContent=text.slice(0,i);if(i>=text.length)done()},ms)})}
+    typing={done};tm=setInterval(()=>{i+=1;vis.textContent=text.slice(0,i);if(i%2===0)window.SND&&SND.play("type");if(i>=text.length)done()},ms)})}
 
-function encounter(){if(R)return Promise.resolve();
+function encounter(){if(R)return Promise.resolve();window.SND&&SND.play("wipe");
   const o=document.createElement("div");o.className="pk-enc";o.innerHTML=Array.from({length:8},(_,i)=>`<div class="bar" style="top:${i*12.5}%;height:12.6%"></div>`).join("");document.body.appendChild(o);
   o.animate([{background:"#fff"},{background:"transparent"},{background:"#fff"},{background:"transparent"},{background:"#fff"},{background:"transparent"}],{duration:420});
   const bars=[...o.children];bars.forEach(b=>b.style.transform="scaleX(0)");
@@ -72,7 +72,7 @@ async function stage(q,label,total,first){
   dlg.onclick=()=>{if(typing)typing.done()};
   const my=app.querySelector(".pk-battle");
   if(first){await encounter();if(!my.isConnected||answered)return}
-  if(!R)foe.animate([{transform:"translateX(160px)"},{transform:"none"}],{duration:450,easing:"steps(8)"});
+  if(!R)foe.animate([{transform:"translateX(160px)"},{transform:"none"}],{duration:450,easing:"steps(8)"});window.SND&&SND.play(q.clue?"whos":"cry");
   if(first){await type(tx,`A wild Lv${LV[q.t]} question appeared!`,26);if(!my.isConnected||answered)return;await new Promise(r=>setTimeout(r,R?0:450));if(!my.isConnected||answered)return}
   if(!answered)type(tx,text);
 }
@@ -86,12 +86,12 @@ async function throwBall(ok,after){
   const aborts=[],anims=[],A=(el,k,o)=>{const a=el.animate(k,o);anims.push(a);return a};
   let skipped=false;const skip=()=>{if(skipped)return;skipped=true;anims.forEach(a=>{try{a.finish()}catch(e){}});aborts.forEach(f=>f())};
   app.querySelector(".pk-battle").addEventListener("click",skip);
-  if(R){hp.style.width=ok?"0%":"100%";type(tx,ok?"Gotcha! The wild question was caught!":"Oh no! The question broke free!");after();return}
+  if(R){window.SND&&SND.play(ok?"caught":"brokeFree");hp.style.width=ok?"0%":"100%";type(tx,ok?"Gotcha! The wild question was caught!":"Oh no! The question broke free!");after();return}
   hp.style.width=ok?"12%":"55%";hp.className=ok?"low":"mid";
   await sleep(280,aborts);
   const fr=field.getBoundingClientRect(),br=ball.getBoundingClientRect(),or=foe.getBoundingClientRect();
   const dx=or.left+or.width/2-(br.left+br.width/2),dy=or.top+or.height*.7-(br.top+br.height/2);
-  ball.style.opacity=1;
+  ball.style.opacity=1;window.SND&&SND.play("throw");
   A(ball,[{transform:"translate(0,0) rotate(0)"},{transform:`translate(${dx*.5}px,${dy-60}px) rotate(360deg)`,offset:.5},{transform:`translate(${dx}px,${dy}px) rotate(720deg)`}],{duration:520,easing:"linear",fill:"forwards"});
   await sleep(520,aborts);
   A(white,[{opacity:0},{opacity:.85},{opacity:0}],{duration:260});
@@ -101,7 +101,7 @@ async function throwBall(ok,after){
   A(ball,[{transform:base},{transform:`translate(${dx}px,${dy+14}px)`}],{duration:160,fill:"forwards",easing:"ease-in"});
   await sleep(200,aborts);
   const tb=`translate(${dx}px,${dy+14}px)`,wb=[{transform:tb+" rotate(0)"},{transform:tb+" rotate(-24deg)",offset:.25},{transform:tb+" rotate(24deg)",offset:.75},{transform:tb+" rotate(0)"}];
-  for(let k=0;k<(ok?3:1);k++){A(ball,wb,{duration:340,easing:"ease-in-out"});await sleep(470,aborts)}
+  for(let k=0;k<(ok?3:1);k++){if(!skipped)window.SND&&SND.play("wobble");A(ball,wb,{duration:340,easing:"ease-in-out"});await sleep(470,aborts)}
   if(!field.isConnected){after();return}
   if(ok){
     for(let k=0;k<3;k++){const s=document.createElement("span");s.className="pk-star";const cx=br.left-fr.left+dx+12,cy=br.top-fr.top+dy+10;s.style.left=cx+"px";s.style.top=cy+"px";field.appendChild(s);
@@ -109,7 +109,7 @@ async function throwBall(ok,after){
     A(ball,[{filter:"brightness(1)"},{filter:"brightness(.6)"}],{duration:200,fill:"forwards"});
     const exp=document.getElementById("pk-exp"),sub=document.getElementById("pk-sub");
     if(!exp||!sub){}else if(S.qs){const c=S.marks.filter(Boolean).length;exp.style.width=100*c/S.qs.length+"%";sub.textContent=`Caught ${c}/${S.qs.length}`}else{exp.style.width=Math.min(100,S.streak*10)+"%";sub.textContent=`Streak ${S.streak}`}
-    type(tx,"Gotcha! The wild question was caught!");
+    window.SND&&SND.play("caught");type(tx,"Gotcha! The wild question was caught!");
   }else{
     A(white,[{opacity:0},{opacity:.9},{opacity:0}],{duration:240});
     A(ball,[{transform:tb+" scale(1)",opacity:1},{transform:tb+" scale(1.8)",opacity:0}],{duration:240,fill:"forwards"});
@@ -117,11 +117,24 @@ async function throwBall(ok,after){
     await sleep(320,aborts);
     A(foe,[{transform:"translateX(0)"},{transform:"translateX(-6px)"},{transform:"translateX(6px)"},{transform:"translateX(0)"}],{duration:300,iterations:2});
     hp.style.width="100%";hp.className="";
-    type(tx,"Oh no! The question broke free!");
+    window.SND&&SND.play("brokeFree");type(tx,"Oh no! The question broke free!");
   }
   await sleep(skipped?0:250,aborts);
   after();
 }
+
+/* ---- leaving mid-battle: you run away ---- */
+let fleeing=false,letThrough=false;
+document.addEventListener("click",e=>{
+  if(letThrough){letThrough=false;return}
+  const tab=e.target.closest&&e.target.closest(".tab");if(!tab||fleeing||R)return;
+  const bt=app.querySelector(".pk-battle");if(!bt||!S||(S.qs&&S.marks.length>=S.qs.length))return;
+  e.preventDefault();e.stopImmediatePropagation();fleeing=true;if(typing)typing.done();
+  window.SND&&SND.play("flee");const tx=document.getElementById("pk-text");if(tx)type(tx,"Got away safely!",20);
+  const ball=document.getElementById("pk-ball");if(ball)ball.style.opacity=0;
+  bt.querySelectorAll(".pk-box.p,.pk-plat.p").forEach(el=>el.animate([{transform:"none",opacity:1},{transform:"translateX(-120px)",opacity:0}],{duration:520,delay:300,easing:"steps(6)",fill:"forwards"}));
+  setTimeout(()=>{fleeing=false;letThrough=true;tab.click()},1150);
+},true);
 
 /* ---- wrap the game's functions ---- */
 const _q=question,_a=answer,_r=results,_eq=endlessQ,_ea=endlessAnswer;

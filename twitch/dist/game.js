@@ -90,7 +90,8 @@ function mainView(){
    <div class="ladder">${qs.map(q=>chip(q.t)).join("")}</div>
    <div class="row" style="margin-top:16px"><button class="btn" id="go">Throw!</button></div>
    <p class="muted" style="margin-top:14px;font-size:14px">Want more? Each difficulty has its own five-question daily under By Difficulty.</p>`;
-  document.getElementById("go").onclick=()=>{S={mode:"main",title:"Daily Catch",qs,i:0,marks:[]};question()};
+  const part=store.get(partKey("main"));if(part&&part.ids&&part.ids.join()===qs.map(q=>q.id).join()&&part.marks&&part.marks.length)document.getElementById("go").textContent=`Continue (Q${Math.min(part.marks.length+1,qs.length)})`;
+  document.getElementById("go").onclick=()=>{S={mode:"main",title:"Daily Catch",qs,i:0,marks:[]};resumeAt("main")};
 }
 /* ---------- daily by difficulty ---------- */
 function home(){
@@ -104,8 +105,16 @@ function startDaily(t){
   const done=store.get(keyFor(t));
   S={mode:"daily",t,qs:todays(t),i:0,marks:[]};
   if(done&&done.ids&&done.ids.join()===S.qs.map(q=>q.id).join()){S.marks=done.marks;return results()}
-  question();
+  resumeAt(t);
 }
+// Daily sets save after every answer, so leaving partway and coming back picks up at the next question: no do-overs.
+const partKey=k=>keyFor(k)+":p";
+// True when today's set for k was started and left partway (so it picks up again instead of starting over).
+function inProgress(k,qs){const p=store.get(partKey(k)),d=store.get(keyFor(k)),ids=qs.map(q=>q.id).join();return !(d&&d.ids&&d.ids.join()===ids)&&!!(p&&p.ids&&p.ids.join()===ids&&p.marks&&p.marks.length)}
+function resumeAt(k){const p=store.get(partKey(k)),ids=S.qs.map(x=>x.id);
+  if(p&&p.ids&&p.ids.join()===ids.join()&&Array.isArray(p.marks)){S.marks=p.marks.slice(0,S.qs.length);S.i=Math.min(S.marks.length,S.qs.length-1)}
+  if(S.marks.length>=S.qs.length){if(S.mode==="daily")store.set(keyFor(S.t),{marks:S.marks,ids});if(S.mode==="main"){store.set(keyFor("main"),{marks:S.marks,ids});if(window.catchDone)try{window.catchDone(S.marks,ids)}catch(e){}}return results(true)}
+  question()}
 /* ---------- shared play loop ---------- */
 function hud(){const label=S.mode==="daily"?chip(S.t):`<span class="chip plain c-who">${esc(S.title)}</span>`;
   return `<div class="hud">${label}<div class="pips" aria-label="Question ${S.i+1} of ${S.qs.length}">${S.qs.map((_,k)=>`<span class="pip ${k<S.marks.length?(S.marks[k]?"ok":"no"):k===S.i?"cur":""}"></span>`).join("")}</div></div>`}
@@ -119,6 +128,7 @@ function question(){
 }
 function answer(btn){
   const q=S.qs[S.i], ok=btn.dataset.o===q.a;S.marks.push(ok);
+  if(S.mode==="main"||S.mode==="daily")store.set(partKey(S.mode==="main"?"main":S.t),{ids:S.qs.map(x=>x.id),marks:S.marks});
   app.querySelectorAll(".opt").forEach(b=>{b.disabled=true;if(b.dataset.o===q.a)b.classList.add("right");else if(b===btn)b.classList.add("wrong");else b.classList.add("dim")});
   app.querySelector(".hud").outerHTML=hud();
   const last=S.i===S.qs.length-1;
