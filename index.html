@@ -965,7 +965,7 @@ function makeAch(C){
     return {days:list.length,mains:list.filter(d=>d.main).length,
       perfectMain:list.some(d=>perfect(d.main))?1:0,fullDay:list.some(d=>SETS.every(k=>d[k]))?1:0,perfectDay:list.some(d=>SETS.every(k=>perfect(d[k])))?1:0,
       topRight:sets.reduce((a,v)=>a+(v.ids||[]).filter((id,i)=>v.marks[i]&&QBYID[id]&&QBYID[id].t==="x").length,0),
-      best:eStats().best,secrets:found.size}}
+      best:eStats().best,secrets:found.size,streak:(()=>{const ds=Object.keys(days).filter(d=>days[d].main).sort();let b=0,r=0;ds.forEach((d,i)=>{r=i&&Math.round((Date.parse(d)-Date.parse(ds[i-1]))/864e5)===1?r+1:1;b=Math.max(b,r)});return b})()}}
   const prog=(m,st)=>{const [c,g]=m[3](st);return [Math.min(c,g),g]};
   const earned=st=>C.miles.filter(m=>{const [c,g]=prog(m,st);return c>=g}).map(m=>m[0]);
   // Read saved state (again after the Discord Activity merges in progress from other devices).
