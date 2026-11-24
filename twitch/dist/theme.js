@@ -25,7 +25,7 @@ const MAP=["......kkkk......",".....kbbbbk.....","..k.kbbbbbbk.k..",".kbkbbbbbbb
 const COL={k:"#1b1d33",b:"#4a4f86",w:"#fffdf3"};
 const SPRITE=`<svg viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">${MAP.map((row,y)=>[...row].map((c,x)=>COL[c]?`<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="${COL[c]}"/>`:"").join("")).join("")}<rect x="4" y="2" width="2" height="1" fill="#6a70b0"/><rect x="3" y="3" width="1" height="2" fill="#6a70b0"/></svg>`;
 const LV={e:5,m:25,h:50,x:100}, EXP={e:40,m:80,h:150,x:300};
-const isNight=()=>{const h=new Date().getHours();return h<6||h>=19};
+const isNight=()=>window.SKY?SKY.isNight():(h=>h<6||h>=19)(new Date().getHours());
 
 /* typewriter that keeps the full text for screen readers */
 let typing=null;
@@ -157,4 +157,70 @@ results=function(fresh){_r(fresh);
   else type(tx,msg,0);
 };
 setView(view);
+/* >>> day-night cycle */
+/* ===== Real-time sky: dawn, day, dusk and night follow the player's own clock =====
+   Sunrise and sunset are estimated from the date (for about 40° N, close for most of the US and Europe), so there is
+   no location prompt. The sky colours blend smoothly between four looks, and the stars, moon, sun and clouds follow. */
+const SKY=(()=>{
+  const PAL={"night": ["#0b1640", "#1b3384", "#2a4fa8"], "dawn": ["#36388c", "#c2679d", "#ffb677"], "day": ["#2c6bd3", "#5aa0ee", "#b5e3ff"], "dusk": ["#29276f", "#bb4f7a", "#ff8f4f"]};
+  const doy=d=>Math.floor((d-new Date(d.getFullYear(),0,0))/864e5);
+  function sunTimes(d){
+    const lat=40*Math.PI/180,decl=23.44*Math.PI/180*Math.sin(2*Math.PI*(284+doy(d))/365);
+    const c=(Math.sin(-0.833*Math.PI/180)-Math.sin(lat)*Math.sin(decl))/(Math.cos(lat)*Math.cos(decl));
+    const half=Math.acos(Math.max(-1,Math.min(1,c)))*12/Math.PI;
+    const y=d.getFullYear(),std=Math.max(new Date(y,0,1).getTimezoneOffset(),new Date(y,6,1).getTimezoneOffset());
+    const noon=12.2+(d.getTimezoneOffset()<std?1:0);          // solar noon on the clock, with daylight saving
+    return {rise:noon-half,set:noon+half};
+  }
+  const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)),mix=(a,b,t)=>{const A=hex(a),B=hex(b);return "#"+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,"0")).join("")};
+  const ease=t=>t*t*(3-2*t);
+  // keyframes through the day: [hour, look, nightness, warmth]
+  function frames(rise,set){return [[rise-1.3,"night",1,0],[rise-.35,"dawn",.55,1],[rise+.9,"day",0,0],[set-.9,"day",0,0],[set+.35,"dusk",.55,1],[set+1.3,"night",1,0]]}
+  let forced=null,last=null;
+  function state(d){
+    const now=d||new Date(),{rise,set}=sunTimes(now);let h=forced!=null?forced:now.getHours()+now.getMinutes()/60;
+    const F=frames(rise,set);let a,b,t;
+    if(h<F[0][0]||h>=F[F.length-1][0]){a=b=F[0];t=0}
+    else for(let i=0;i<F.length-1;i++)if(h>=F[i][0]&&h<F[i+1][0]){a=F[i];b=F[i+1];t=ease((h-a[0])/(b[0]-a[0]));break}
+    const pa=PAL[a[1]],pb=PAL[b[1]];
+    return {top:mix(pa[0],pb[0],t),mid:mix(pa[1],pb[1],t),bot:mix(pa[2],pb[2],t),isle:pa[3]?mix(pa[3],pb[3],t):null,isle2:pa[4]?mix(pa[4],pb[4],t):null,night:a[2]+(b[2]-a[2])*t,warm:a[3]+(b[3]-a[3])*t,hour:h,rise,set,
+      phase:(a[1]===b[1]?a[1]:(t<.5?a[1]:b[1]))};
+  }
+  function paint(){
+    const s=state(),r=document.documentElement.style;last=s;
+    r.setProperty("--sky-top",s.top);r.setProperty("--sky-mid",s.mid);r.setProperty("--sky-bot",s.bot);if(s.isle){r.setProperty("--isle",s.isle);r.setProperty("--isle2",s.isle2)}
+    // the sun crosses the sky from sunrise to sunset; the moon crosses it overnight (left = east, right = west)
+    const arc=(p)=>({x:6+88*p,y:42-36*Math.sin(Math.PI*p)});   // one smooth arc that carries on below the horizon
+    const dayLen=s.set-s.rise,ps=(s.hour-s.rise)/dayLen,pm=(((s.hour-s.set)%24)+24)%24/(24-dayLen);
+    const sun=arc(Math.min(1.35,Math.max(-.35,ps))),moon=arc(pm>1.5?Math.max(-.35,pm-(24/(24-dayLen))):Math.min(1.35,pm));
+    r.setProperty("--sun-x",sun.x.toFixed(2)+"vw");r.setProperty("--sun-y",sun.y.toFixed(2)+"vh");
+    r.setProperty("--moon-x",moon.x.toFixed(2)+"vw");r.setProperty("--moon-y",moon.y.toFixed(2)+"vh");
+    r.setProperty("--night",s.night.toFixed(3));r.setProperty("--day",(1-s.night).toFixed(3));r.setProperty("--warm",s.warm.toFixed(3));
+    const tc=document.querySelector('meta[name="theme-color"]');if(tc)tc.content=s.top;
+    document.documentElement.dataset.sky=s.phase;
+  }
+  paint();setInterval(()=>{if(forced==null)paint()},60000);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden&&forced==null)paint()});
+  return {now:()=>last||state(),isNight:()=>(last||state()).night>.5,set:h=>{forced=h;paint()},live:()=>{forced=null;paint()},sunTimes};
+})();
+window.SKY=SKY;
+
+/* Poké Catch's scenery for the day/night cycle: stars and the moon at night, a pixel sun by day, brighter grass in daylight */
+{const css=document.createElement("style");css.textContent=`
+html{background:var(--sky-top) linear-gradient(180deg,var(--sky-top) 0%,var(--sky-mid) 60%,var(--sky-bot) 100%) fixed!important}
+.pk-starfield{position:absolute;inset:0;opacity:var(--night)}
+.pk-moon{opacity:calc((var(--night) - .45)*2.2);left:var(--moon-x,86vw)!important;top:var(--moon-y,8vh)!important;right:auto!important;margin:-44px 0 0 -44px}
+.pk-sun{position:absolute;left:var(--sun-x,86vw);top:var(--sun-y,8vh);margin:-52px 0 0 -52px;width:104px;height:104px;opacity:calc((var(--day) - .35)*1.8);filter:drop-shadow(0 0 18px rgba(255,236,140,.55))}
+.pk-sun svg{width:100%;height:100%;display:block;image-rendering:pixelated}
+.pk-glow{position:absolute;left:-20%;right:-20%;bottom:0;height:70%;background:radial-gradient(ellipse at 50% 100%,rgba(255,170,90,.5),rgba(255,110,150,.22) 45%,transparent 70%);opacity:var(--warm)}
+.pk-grass{filter:brightness(calc(.78 + var(--day)*.32)) saturate(calc(.95 + var(--day)*.25))}
+.pk-grass.b{filter:brightness(calc(.56 + var(--day)*.3)) saturate(calc(.95 + var(--day)*.2))}`;document.head.appendChild(css);
+ const field=document.createElement("div");field.className="pk-starfield";night.querySelectorAll(".pk-stars").forEach(s=>field.appendChild(s));night.prepend(field);
+ const glow=document.createElement("div");glow.className="pk-glow";night.querySelector(".pk-grass").before(glow);
+ const sun=document.createElement("div");sun.className="pk-sun";
+ const rays=[0,45,90,135,180,225,270,315].map(a=>`<rect x="15" y="1" width="2" height="5" fill="#ffd23f" transform="rotate(${a} 16 16)"/>`).join("");
+ sun.innerHTML=`<svg viewBox="0 0 32 32" shape-rendering="crispEdges" aria-hidden="true">${rays}<circle cx="16" cy="16" r="8" fill="#ffd23f"/><circle cx="16" cy="16" r="6" fill="#ffe680"/><rect x="12" y="12" width="3" height="2" fill="#fff6c8"/></svg>`;
+ night.querySelector(".pk-moon").after(sun)}
+
+/* <<< day-night cycle */
 }

@@ -5,6 +5,7 @@ import ACTIVITY_JS from "./activity-bundle.js";
 import { GAME, mergeKeys, achievementsEmbed } from "./progress.js";
 import { twitch, twitchCleanup } from "./twitch.js";
 import { count } from "./analytics.js";
+import { dailyStats } from "./daily-stats.js";
 
 const TZ = "America/New_York";
 const API = env => env.DISCORD_API || "https://discord.com/api/v10";
@@ -501,6 +502,7 @@ export default {
         return new Response(`<!doctype html><meta name="viewport" content="width=device-width"><body style="font-family:system-ui;padding:20px"><h2>Daily Poké Catch bot status</h2>${lines.map(([t, ok]) => `<p>${ok ? "✅" : "❌"} ${t}</p>`).join("")}${pk && !/^[0-9a-f]{64}$/i.test(pk) ? `<p>Your public key is ${pk.length} characters long. It should be exactly 64.</p>` : ""}`, { headers: { "content-type": "text/html; charset=utf-8" } });
       }
       if (path.startsWith("/twitch/")) return await twitch(env, req, path, ctx, SITE(env));
+      if (path.startsWith("/stats/")) return await dailyStats(env, req, path, { db, day: nyDay(), questions: dayQuestions });
       if (path.startsWith("/api/")) return await api(env, req, path, ctx);
       if (path === "/activity.js") return new Response(ACTIVITY_JS, { headers: { "content-type": "text/javascript", "cache-control": "max-age=300" } });
       if (path === "/" || path === "/index.html") return await activityPage(env);

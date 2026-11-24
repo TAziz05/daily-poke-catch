@@ -678,7 +678,7 @@ const MAP=["......kkkk......",".....kbbbbk.....","..k.kbbbbbbk.k..",".kbkbbbbbbb
 const COL={k:"#1b1d33",b:"#4a4f86",w:"#fffdf3"};
 const SPRITE=`<svg viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">${MAP.map((row,y)=>[...row].map((c,x)=>COL[c]?`<rect x="${x}" y="${y}" width="1.02" height="1.02" fill="${COL[c]}"/>`:"").join("")).join("")}<rect x="4" y="2" width="2" height="1" fill="#6a70b0"/><rect x="3" y="3" width="1" height="2" fill="#6a70b0"/></svg>`;
 const LV={e:5,m:25,h:50,x:100}, EXP={e:40,m:80,h:150,x:300};
-const isNight=()=>{const h=new Date().getHours();return h<6||h>=19};
+const isNight=()=>window.SKY?SKY.isNight():(h=>h<6||h>=19)(new Date().getHours());
 
 /* typewriter that keeps the full text for screen readers */
 let typing=null;
@@ -810,6 +810,72 @@ results=function(fresh){_r(fresh);
   else type(tx,msg,0);
 };
 setView(view);
+/* >>> day-night cycle */
+/* ===== Real-time sky: dawn, day, dusk and night follow the player's own clock =====
+   Sunrise and sunset are estimated from the date (for about 40° N, close for most of the US and Europe), so there is
+   no location prompt. The sky colours blend smoothly between four looks, and the stars, moon, sun and clouds follow. */
+const SKY=(()=>{
+  const PAL={"night": ["#0b1640", "#1b3384", "#2a4fa8"], "dawn": ["#36388c", "#c2679d", "#ffb677"], "day": ["#2c6bd3", "#5aa0ee", "#b5e3ff"], "dusk": ["#29276f", "#bb4f7a", "#ff8f4f"]};
+  const doy=d=>Math.floor((d-new Date(d.getFullYear(),0,0))/864e5);
+  function sunTimes(d){
+    const lat=40*Math.PI/180,decl=23.44*Math.PI/180*Math.sin(2*Math.PI*(284+doy(d))/365);
+    const c=(Math.sin(-0.833*Math.PI/180)-Math.sin(lat)*Math.sin(decl))/(Math.cos(lat)*Math.cos(decl));
+    const half=Math.acos(Math.max(-1,Math.min(1,c)))*12/Math.PI;
+    const y=d.getFullYear(),std=Math.max(new Date(y,0,1).getTimezoneOffset(),new Date(y,6,1).getTimezoneOffset());
+    const noon=12.2+(d.getTimezoneOffset()<std?1:0);          // solar noon on the clock, with daylight saving
+    return {rise:noon-half,set:noon+half};
+  }
+  const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)),mix=(a,b,t)=>{const A=hex(a),B=hex(b);return "#"+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,"0")).join("")};
+  const ease=t=>t*t*(3-2*t);
+  // keyframes through the day: [hour, look, nightness, warmth]
+  function frames(rise,set){return [[rise-1.3,"night",1,0],[rise-.35,"dawn",.55,1],[rise+.9,"day",0,0],[set-.9,"day",0,0],[set+.35,"dusk",.55,1],[set+1.3,"night",1,0]]}
+  let forced=null,last=null;
+  function state(d){
+    const now=d||new Date(),{rise,set}=sunTimes(now);let h=forced!=null?forced:now.getHours()+now.getMinutes()/60;
+    const F=frames(rise,set);let a,b,t;
+    if(h<F[0][0]||h>=F[F.length-1][0]){a=b=F[0];t=0}
+    else for(let i=0;i<F.length-1;i++)if(h>=F[i][0]&&h<F[i+1][0]){a=F[i];b=F[i+1];t=ease((h-a[0])/(b[0]-a[0]));break}
+    const pa=PAL[a[1]],pb=PAL[b[1]];
+    return {top:mix(pa[0],pb[0],t),mid:mix(pa[1],pb[1],t),bot:mix(pa[2],pb[2],t),isle:pa[3]?mix(pa[3],pb[3],t):null,isle2:pa[4]?mix(pa[4],pb[4],t):null,night:a[2]+(b[2]-a[2])*t,warm:a[3]+(b[3]-a[3])*t,hour:h,rise,set,
+      phase:(a[1]===b[1]?a[1]:(t<.5?a[1]:b[1]))};
+  }
+  function paint(){
+    const s=state(),r=document.documentElement.style;last=s;
+    r.setProperty("--sky-top",s.top);r.setProperty("--sky-mid",s.mid);r.setProperty("--sky-bot",s.bot);if(s.isle){r.setProperty("--isle",s.isle);r.setProperty("--isle2",s.isle2)}
+    // the sun crosses the sky from sunrise to sunset; the moon crosses it overnight (left = east, right = west)
+    const arc=(p)=>({x:6+88*p,y:42-36*Math.sin(Math.PI*p)});   // one smooth arc that carries on below the horizon
+    const dayLen=s.set-s.rise,ps=(s.hour-s.rise)/dayLen,pm=(((s.hour-s.set)%24)+24)%24/(24-dayLen);
+    const sun=arc(Math.min(1.35,Math.max(-.35,ps))),moon=arc(pm>1.5?Math.max(-.35,pm-(24/(24-dayLen))):Math.min(1.35,pm));
+    r.setProperty("--sun-x",sun.x.toFixed(2)+"vw");r.setProperty("--sun-y",sun.y.toFixed(2)+"vh");
+    r.setProperty("--moon-x",moon.x.toFixed(2)+"vw");r.setProperty("--moon-y",moon.y.toFixed(2)+"vh");
+    r.setProperty("--night",s.night.toFixed(3));r.setProperty("--day",(1-s.night).toFixed(3));r.setProperty("--warm",s.warm.toFixed(3));
+    const tc=document.querySelector('meta[name="theme-color"]');if(tc)tc.content=s.top;
+    document.documentElement.dataset.sky=s.phase;
+  }
+  paint();setInterval(()=>{if(forced==null)paint()},60000);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden&&forced==null)paint()});
+  return {now:()=>last||state(),isNight:()=>(last||state()).night>.5,set:h=>{forced=h;paint()},live:()=>{forced=null;paint()},sunTimes};
+})();
+window.SKY=SKY;
+
+/* Poké Catch's scenery for the day/night cycle: stars and the moon at night, a pixel sun by day, brighter grass in daylight */
+{const css=document.createElement("style");css.textContent=`
+html{background:var(--sky-top) linear-gradient(180deg,var(--sky-top) 0%,var(--sky-mid) 60%,var(--sky-bot) 100%) fixed!important}
+.pk-starfield{position:absolute;inset:0;opacity:var(--night)}
+.pk-moon{opacity:calc((var(--night) - .45)*2.2);left:var(--moon-x,86vw)!important;top:var(--moon-y,8vh)!important;right:auto!important;margin:-44px 0 0 -44px}
+.pk-sun{position:absolute;left:var(--sun-x,86vw);top:var(--sun-y,8vh);margin:-52px 0 0 -52px;width:104px;height:104px;opacity:calc((var(--day) - .35)*1.8);filter:drop-shadow(0 0 18px rgba(255,236,140,.55))}
+.pk-sun svg{width:100%;height:100%;display:block;image-rendering:pixelated}
+.pk-glow{position:absolute;left:-20%;right:-20%;bottom:0;height:70%;background:radial-gradient(ellipse at 50% 100%,rgba(255,170,90,.5),rgba(255,110,150,.22) 45%,transparent 70%);opacity:var(--warm)}
+.pk-grass{filter:brightness(calc(.78 + var(--day)*.32)) saturate(calc(.95 + var(--day)*.25))}
+.pk-grass.b{filter:brightness(calc(.56 + var(--day)*.3)) saturate(calc(.95 + var(--day)*.2))}`;document.head.appendChild(css);
+ const field=document.createElement("div");field.className="pk-starfield";night.querySelectorAll(".pk-stars").forEach(s=>field.appendChild(s));night.prepend(field);
+ const glow=document.createElement("div");glow.className="pk-glow";night.querySelector(".pk-grass").before(glow);
+ const sun=document.createElement("div");sun.className="pk-sun";
+ const rays=[0,45,90,135,180,225,270,315].map(a=>`<rect x="15" y="1" width="2" height="5" fill="#ffd23f" transform="rotate(${a} 16 16)"/>`).join("");
+ sun.innerHTML=`<svg viewBox="0 0 32 32" shape-rendering="crispEdges" aria-hidden="true">${rays}<circle cx="16" cy="16" r="8" fill="#ffd23f"/><circle cx="16" cy="16" r="6" fill="#ffe680"/><rect x="12" y="12" width="3" height="2" fill="#fff6c8"/></svg>`;
+ night.querySelector(".pk-moon").after(sun)}
+
+/* <<< day-night cycle */
 }
 </script>
 
@@ -885,7 +951,7 @@ function makeAch(C){
   function render(){
     const st=stats(),done=earned(st),total=C.miles.length+C.eggs.length,have=done.length+found.size,pct=Math.round(100*have/total);
     app.innerHTML=`<div id="ach-root"><h2>Achievements</h2><p class="muted">${have} of ${total} unlocked. Milestones come from playing; secrets stay hidden until you find them.</p>
-     <div class="ach-bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div>
+     <div class="ach-bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${pct}%"></span></div>${window.YS?YS.mineHTML():""}
      <h3 class="ach-h">Milestones</h3><ul class="ach-list">${C.miles.map(m=>{const [c,g]=prog(m,st),ok=c>=g;
        return `<li class="${ok?"":"no"}">${C.medal(ok,"mile")}<div class="ach-txt"><b>${m[1]}</b><span>${m[2]}</span>${!ok&&g>1?`<div class="ach-mini"><span style="width:${100*c/g}%"></span></div><span class="ach-n">${c.toLocaleString()}/${g.toLocaleString()}</span>`:""}</div></li>`}).join("")}</ul>
      <h3 class="ach-h">Secrets <small>${found.size}/${C.eggs.length}</small></h3><ul class="ach-list">${C.eggs.map(([id,n,d,h])=>found.has(id)
@@ -906,7 +972,11 @@ const EGGS=[
  ["shiny","Shiny Hunter","Spotted a shiny wild question","Some wild ones sparkle and come in gold. Very rare."],
  ["moon","Wishing Star","Made a wish on a shooting star","Look up at the night sky."],
  ["retro","Retro Mode","Switched to the old four-shade screen","An old cheat code, or hold the date for a couple of seconds."],
- ["evolve","Evolution","Watched the emblem evolve","Something in the header spins. Tap it until it changes."]];
+ ["evolve","Evolution","Watched the emblem evolve","Something in the header spins. Tap it until it changes."],
+ ["owl","Night Owl","Finished the Daily Catch after midnight","Trainers who play after midnight see things others don't."],
+ ["fullmoon","Full Moon","Saw a shadow cross the full moon","Once a month, look up at the full moon."],
+ ["sunny","Sunny Day","Made the sunlight harsh","Look up while the sun is out."],
+ ["bird","Early Bird","Finished the Daily Catch at dawn","The early trainer catches the question. Play as the sun comes up."]];
 let queue=[];
 /* dialog-box messages, typed out, tap to continue */
 let dEl=null,dTimer;
@@ -937,7 +1007,9 @@ const ACH=makeAch({pfx:"pokecatch",dayRe:/^pokecatch1:(\d{4}-\d{2}-\d{2}):(main|
    ["mball","Master Ball Pro","Answer 10 Impossible questions right in daily sets",s=>[s.topRight,10]],
    ["s10","On a Roll","Reach a 10-question streak in Endless",s=>[s.best,10]],
    ["s25","Unstoppable","Reach a 25-question streak in Endless",s=>[s.best,25]],
-   ["hunter","Secret Hunter","Find every secret",s=>[s.secrets,5]]]});
+   ["w7","Steady Trainer","Play the Daily Catch 7 days in a row",s=>[s.streak,7]],
+   ["w30","Dedicated Trainer","Play the Daily Catch 30 days in a row",s=>[s.streak,30]],
+   ["hunter","Secret Hunter","Find every secret",s=>[s.secrets,EGGS.length]]]});
 window.gameAch=ACH;
 const secret=id=>ACH.secret(id);
 
@@ -992,7 +1064,7 @@ function shinyFoe(){const f=document.getElementById("pk-foe");if(!f)return;windo
 document.addEventListener("click",e=>{
   if(e.target.closest("button,a,input,select,textarea,label,.panel,.tabs,.egg-dlg,.emblem,#date"))return;
   const moon=document.querySelector(".pk-moon").getBoundingClientRect();
-  if(e.clientX>=moon.left-10&&e.clientX<=moon.right+10&&e.clientY>=moon.top-10&&e.clientY<=moon.bottom+10){shootingStar();return}
+  if((!window.SKY||SKY.isNight())&&e.clientX>=moon.left-10&&e.clientX<=moon.right+10&&e.clientY>=moon.top-10&&e.clientY<=moon.bottom+10){shootingStar();return}
   if(e.clientY>innerHeight-96){rustle(e.clientX);if(!playing()&&(Math.random()<.35||!ACH.has("grass")&&Math.random()<.6))setTimeout(()=>encounter(e.clientX),250)}
 });
 
@@ -1020,6 +1092,103 @@ em.addEventListener("click",()=>{if(evolving||em.classList.contains("evolved"))r
   if(!R)em.animate(Array.from({length:12},(_,k)=>({filter:k%2?"brightness(3)":"brightness(1)"})),{duration:2200});
   setTimeout(()=>{em.classList.remove("fast");em.classList.add("evolved");const r=em.getBoundingClientRect();sparkle(r.left+r.width/2,r.top+r.height/2,10);
     say("Congratulations!","Your emblem evolved into a glowing emblem! It stays that way until you reload.");secret("evolve");evolving=false},R?0:2300)});
+/* >>> stats and new secrets */
+/* ===== Your Daily stats (from this device), and how everyone did today (anonymous, from the game's server) ===== */
+const YS=(()=>{
+  const DAYRE=new RegExp("^pokecatch1:(\\d{4}-\\d{2}-\\d{2}):main$"),API=location.hostname.endsWith("discordsays.com")?"":"https://daily-poke-catch-bot.towfiq-aziz11.workers.dev";
+  const t=d=>Date.parse(d+"T12:00:00Z"),gap=(a,b)=>Math.round((t(b)-t(a))/864e5);
+  function mine(){const days=[];
+    try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i),m=k&&k.match(DAYRE);if(!m)continue;const v=store.get(k);if(v&&Array.isArray(v.marks)&&v.marks.length)days.push({d:m[1],s:v.marks.filter(Boolean).length,n:v.marks.length})}}catch(e){}
+    days.sort((a,b)=>a.d<b.d?-1:1);
+    let best=0,run=0;days.forEach((x,i)=>{run=i&&gap(days[i-1].d,x.d)===1?run+1:1;best=Math.max(best,run)});
+    let cur=0;const last=days[days.length-1];
+    if(last&&gap(last.d,dayKey)<=1){cur=1;for(let i=days.length-1;i>0&&gap(days[i-1].d,days[i].d)===1;i--)cur++}
+    const dist=[0,0,0,0,0,0];days.forEach(x=>{if(x.n===5)dist[x.s]++});
+    let full=0;try{const sets=["main","e","m","h","x"];for(const x of days)if(sets.every(k=>{const v=store.get(`pokecatch1:${x.d}:${k}`);return v&&v.marks&&v.marks.length&&v.marks.every(Boolean)}))full++}catch(e){}
+    return {played:days.length,perfect:dist[5],full,cur,best,dist,today:(days.find(x=>x.d===dayKey)||{}).s};
+  }
+  const bars=(dist,hi,unit)=>{const max=Math.max(1,...dist);return `<div class="ys-dist">${[5,4,3,2,1,0].map(s=>`<div class="ys-row${s===hi?" hi":""}"><span class="ys-l">${s}/5</span><span class="ys-b"><i style="width:${Math.max(dist[s]?6:0,100*dist[s]/max)}%"></i></span><span class="ys-c">${dist[s]}${unit}</span></div>`).join("")}</div>`};
+  function mineHTML(){const m=mine();if(!m.played)return `<section class="ys"><h3>Your Daily Catch stats</h3><p class="ys-note">Finish today's Daily Catch to start your stats.</p></section>`;
+    return `<section class="ys"><h3>Your Daily Catch stats</h3>
+     <div class="ys-grid"><div><b>${m.played}</b><span>Played</span></div><div><b>${m.perfect}</b><span>Perfect 5/5</span></div><div><b>${m.cur}</b><span>Current streak</span></div><div><b>${m.best}</b><span>Best streak</span></div></div>
+     ${bars(m.dist,m.today,"")}${m.full?`<p class="ys-note">Perfect 25/25 days: <b>${m.full}</b></p>`:""}</section>`}
+  // a random ID for this device, so its result counts once; nothing else about the player is sent
+  const dev=()=>{let v=store.get("pokecatch:dev");if(typeof v!=="string"||!/^[a-z0-9]{24}$/.test(v)){v=Array.from(crypto.getRandomValues(new Uint8Array(24)),b=>"abcdefghijklmnopqrstuvwxyz0123456789"[b%36]).join("");store.set("pokecatch:dev",v)}return v};
+  async function everyone(post){
+    try{const opt=post?{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({dev:dev(),ids:S.qs.map(q=>q.id),marks:S.marks})}:{};
+      const r=await fetch(API+(post?"/stats/result":"/stats/daily"),opt);return r.ok?await r.json():null}catch(e){return null}}
+  function everyoneHTML(g,score){
+    if(!g)return "";
+    if(!g.dist)return `<section class="gs"><h3>How everyone did today</h3><p class="ys-note">Everyone's results show up once ${g.min} players have finished today's Daily Catch (${g.n} so far). Check back later!</p></section>`;
+    const lower=g.dist.slice(0,score).reduce((a,b)=>a+b,0),same=Math.round(100*g.dist[score]/g.n);
+    const line=score===5?`You're one of the <b>${same}%</b> who got a perfect 5/5.`:score===0?`Tough one! <b>${same}%</b> of players also got 0/5.`:`You did better than <b>${Math.round(100*lower/g.n)}%</b> of players.`;
+    return `<section class="gs"><h3>How everyone did today</h3><p>${line} <span class="ys-note">${g.n} players</span></p>${bars(g.dist,score,"")}</section>`}
+  async function addToResults(fresh){
+    if(!S||S.mode!=="main"||!S.qs||S.marks.length<S.qs.length)return;
+    const score=S.marks.filter(Boolean).length,box=document.createElement("div");box.className="ys-wrap";box.innerHTML=mineHTML()+`<div class="gs-slot"></div>`;app.appendChild(box);
+    const g=await everyone(!!fresh&&!window.catchDone);if(!box.isConnected||!g)return;
+    box.querySelector(".gs-slot").innerHTML=everyoneHTML(g,score);
+    if(g.q)app.querySelectorAll(".recap li").forEach((li,i)=>{const tx=li.lastElementChild||li;if(g.q[i]!=null&&!li.querySelector(".gs-pct"))tx.insertAdjacentHTML("beforeend",`<span class="gs-pct">${g.q[i]}% of players got this</span>`)})}
+  const css=document.createElement("style");css.textContent=`
+.ys-wrap{margin-top:18px;display:grid;gap:14px}
+.ys,.gs{background:var(--ys-bg);border:var(--ys-border);border-radius:var(--ys-r);padding:14px 16px;color:var(--ys-ink)}
+.ys h3,.gs h3{margin:0 0 10px;font:var(--ys-h)}
+.ys p,.gs p{margin:0 0 8px}
+.ys-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;margin-bottom:10px}
+.ys-grid b{display:block;font:var(--ys-num)}.ys-grid span{font-size:12px;opacity:.75}
+.ys-dist{display:grid;gap:4px}
+.ys-row{display:grid;grid-template-columns:34px 1fr 30px;align-items:center;gap:8px;font-size:13px}
+.ys-b{height:16px;background:var(--ys-track);border-radius:4px;overflow:hidden}.ys-b i{display:block;height:100%;background:var(--ys-bar);border-radius:4px}
+.ys-row.hi .ys-b i{background:var(--ys-acc)}.ys-row.hi .ys-l{font-weight:800}
+.ys-c{text-align:right;opacity:.8}.ys-note{font-size:13px;opacity:.75}
+.gs-pct{display:block;font-size:12px;opacity:.7;margin-top:2px}
+@media (max-width:420px){.ys-grid b{font-size:22px}}`;document.head.appendChild(css);
+  return {mine,mineHTML,addToResults};
+})();
+window.YS=YS;
+const _rys=results;results=function(fresh){_rys.apply(this,arguments);YS.addToResults(fresh);
+  // Night Owl: finish the daily set between midnight and 4 am
+  // (uses the sky clock, which is the real time in the game; the preview's time bar can move it for testing)
+  if(fresh&&S&&S.mode==="main"){const d=new Date(),h=window.SKY?SKY.now().hour:d.getHours()+d.getMinutes()/60;
+    if(h<4)setTimeout(()=>secret("owl"),1200);
+    // Early Bird: finish the daily set at dawn, from an hour before sunrise to an hour after
+    else if(window.SKY){const st=SKY.sunTimes(d);if(h>=st.rise-1&&h<=st.rise+1)setTimeout(()=>secret("bird"),1200)}}};
+// the real moon phase (0 = new, 0.5 = full); a full moon is within about a day of 0.5
+const moonPhase=()=>{const syn=29.530588853,ref=Date.UTC(2000,0,6,18,14)/864e5;return((((Date.now()/864e5-ref)%syn)+syn)%syn)/syn};
+const fullMoon=()=>window.__fullMoon===true||Math.abs(moonPhase()-.5)<.034;
+/* Poké Catch: a mysterious shadow crosses the full moon, and tapping the sun makes the sunlight harsh (Sunny Day) */
+{const css=document.createElement("style");css.textContent=`
+:root{--ys-bg:#fffaf0;--ys-border:3px solid #2b2f55;--ys-r:12px;--ys-ink:#1b1f3b;--ys-h:400 20px/1.1 "Lilita One",sans-serif;--ys-num:400 28px/1 "Lilita One",sans-serif;--ys-track:#efe6d2;--ys-bar:#7f8fd0;--ys-acc:#ffcb05}
+.pk-shadow{position:fixed;left:0;top:0;z-index:1004;pointer-events:none;width:150px;height:75px;filter:drop-shadow(0 0 6px rgba(255,246,210,.5))}
+.pk-shadow svg{width:100%;height:100%;display:block}
+body.pk-sunny .pk-sun{animation:pkSunny 1.4s ease-in-out infinite alternate}
+@keyframes pkSunny{to{transform:scale(1.25);filter:drop-shadow(0 0 30px #fff2a0) drop-shadow(0 0 60px #ffb84d)}}
+.pk-sunlight{position:fixed;inset:0;z-index:2;pointer-events:none;background:radial-gradient(circle at var(--sun-x,86vw) var(--sun-y,8vh),rgba(255,236,150,.55),rgba(255,200,90,.18) 40%,transparent 70%);mix-blend-mode:screen;opacity:0;transition:opacity 1.2s}
+body.pk-sunny .pk-sunlight{opacity:1}
+body.pk-sunny .pk-grass{filter:brightness(1.25) saturate(1.3)}`;document.head.appendChild(css);
+ const light=document.createElement("div");light.className="pk-sunlight";document.body.appendChild(light);
+ // original shadow shapes that glide across the full moon (made up, not any particular Pokémon)
+ const SHADOWS={
+  wing:`<svg viewBox="0 0 120 60"><path d="M60 28c-6-3-12-12-26-14C24 13 12 16 2 24c12-2 20 0 26 4-8 0-14 3-18 8 8-3 16-3 22 0-4 2-6 5-6 9 6-5 14-7 22-6l6 9 6-9c8-1 16 1 22 6 0-4-2-7-6-9 6-3 14-3 22 0-4-5-10-8-18-8 6-4 14-6 26-4-10-8-22-11-32-10-14 2-20 11-26 14z" fill="#0b1030"/></svg>`
+};
+ function moonShadow(){const kind="wing",m=document.querySelector(".pk-moon").getBoundingClientRect(),s=document.createElement("div");s.className="pk-shadow";
+   s.innerHTML=SHADOWS[kind]||SHADOWS.wing;
+   document.body.appendChild(s);const y=m.top+m.height/2-30;
+   s.animate([{transform:`translate(${m.left-260}px,${y+40}px) scale(.7)`,opacity:0},{opacity:.95,offset:.2},{transform:`translate(${m.left+m.width/2-75}px,${y}px) scale(1)`,opacity:.95,offset:.5},{opacity:.9,offset:.8},{transform:`translate(${m.right+200}px,${y-50}px) scale(.8)`,opacity:0}],{duration:R?10:1700,easing:"ease-in-out"}).onfinish=()=>s.remove();
+   window.SND&&SND.play("wild");
+   setTimeout(()=>{say("Full moon","A mysterious shadow glided across the full moon... then it was gone.");secret("fullmoon")},R?0:1400)}
+ let sunnyT;
+ function sunnyDay(){window.SND&&SND.play("star");document.body.classList.add("pk-sunny");clearTimeout(sunnyT);sunnyT=setTimeout(()=>document.body.classList.remove("pk-sunny"),60000);
+   say("Sunny Day","The sunlight turned harsh!");secret("sunny")}
+ document.addEventListener("click",e=>{
+   if(e.target.closest("button,a,input,select,textarea,label,.tabs,.egg-dlg,.emblem,#app"))return;
+   const hit=el=>{if(!el)return false;const r=el.getBoundingClientRect();return e.clientX>=r.left-10&&e.clientX<=r.right+10&&e.clientY>=r.top-10&&e.clientY<=r.bottom+10};
+   if(window.SKY&&!SKY.isNight()&&hit(document.querySelector(".pk-sun"))){e.stopImmediatePropagation();sunnyDay();return}
+   if(window.SKY&&SKY.isNight()&&fullMoon()&&hit(document.querySelector(".pk-moon"))){e.stopImmediatePropagation();moonShadow()}
+ },true);
+ window.__moonShadow=moonShadow;
+}
+/* <<< stats and new secrets */
 }
 </script>
 <script>
@@ -1027,7 +1196,7 @@ em.addEventListener("click",()=>{if(evolving||em.classList.contains("evolved"))r
    Off by default; the speaker button in the corner turns effects and music on, and the choice is saved on this device. ===== */
 (function(){
 "use strict";
-const G={"pfx": "pokecatch", "font": "\"Nunito\",system-ui,sans-serif", "bg": "#1b2a6b", "fg": "#fff", "edge": "#0c1640", "accent": "#ffcb05", "skipTap": ".egg-mon,.egg-dlg", "songs": {"lobby": "pkMenu", "match": "pkB", "og": "pk", "endless": "pkTown"}};
+const G={"pfx": "pokecatch", "font": "\"Nunito\",system-ui,sans-serif", "bg": "#1b2a6b", "fg": "#fff", "edge": "#0c1640", "accent": "#ffcb05", "skipTap": ".egg-mon,.egg-dlg", "songs": {"lobby": "pkMenu", "match": "pkB", "og": "pk", "endless": "pkTown"}, "musicBase": "music/", "music": {}};
 const noop=()=>{};
 const SND={play:noop,music:noop,on:()=>false};window.SND=SND;
 const AC=typeof window!=="undefined"&&(window.AudioContext||window.webkitAudioContext);
@@ -1035,6 +1204,8 @@ if(!AC||typeof document==="undefined"||!document.body)return;
 const KEY=G.pfx+":sound";
 let st={fx:false,mu:false,vol:.8};try{Object.assign(st,JSON.parse(localStorage.getItem(KEY))||{})}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
+let NIGHT=0,nightLP,nightVerb;
+function setNight(n){NIGHT=n;if(!A||!nightLP)return;const t=A.currentTime;nightLP.frequency.setTargetAtTime(20000*Math.pow(2300/20000,n),t,.4);nightVerb.gain.setTargetAtTime(.5*n,t,.4)}
 let A=null,master,sfxBus,musRoot,musBus,noiseBuf,dry,wet,retroOn=false,holdUntil=0;
 function setRetro(on){retroOn=on;if(!A)return;const t=A.currentTime;dry.gain.setTargetAtTime(on?0:1,t,.03);wet.gain.setTargetAtTime(on?1:0,t,.03)}
 function ctx(){
@@ -1048,7 +1219,11 @@ function ctx(){
   const lp=A.createBiquadFilter();lp.type="lowpass";lp.frequency.value=3800;const hp=A.createBiquadFilter();hp.type="highpass";hp.frequency.value=180;
   const pre=A.createGain();pre.gain.value=4;const post=A.createGain();post.gain.value=.3;master.connect(pre);pre.connect(crush);crush.connect(lp);lp.connect(hp);hp.connect(post);post.connect(wet);wet.connect(comp);setRetro(retroOn);
   sfxBus=A.createGain();sfxBus.gain.value=.7;sfxBus.connect(master);
-  musRoot=A.createGain();musRoot.gain.value=.27;musRoot.connect(master);musBus=musRoot;
+  musRoot=A.createGain();musRoot.gain.value=.27;musBus=musRoot;
+  // night versions of the songs: darker, softer drums, a little slower, more echo and a few twinkles, following the sky
+  nightLP=A.createBiquadFilter();nightLP.type="lowpass";nightLP.Q.value=.5;nightLP.frequency.value=20000;musRoot.connect(nightLP);nightLP.connect(master);
+  {const len=A.sampleRate*2.6,b=A.createBuffer(2,len,A.sampleRate);for(let c=0;c<2;c++){const d=b.getChannelData(c);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.5)}
+   const cv=A.createConvolver();cv.buffer=b;nightVerb=A.createGain();nightVerb.gain.value=0;musRoot.connect(nightVerb);nightVerb.connect(cv);cv.connect(master)}
   noiseBuf=A.createBuffer(1,A.sampleRate,A.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
   return A;
 }
@@ -1063,7 +1238,7 @@ function tone({t=0,n,f,type="square",dur=.12,vol=.3,slide,bus=sfxBus,detune=0,at
   if(cut){const fl=a.createBiquadFilter();fl.type="lowpass";fl.frequency.value=cut;g.connect(fl);last=fl}else last=g;
   last.connect(bus);o.start(s);o.stop(s+dur+.05);
 }
-function noise({t=0,dur=.1,vol=.25,type="highpass",freq=6000,sweep,bus=sfxBus,q=1}){
+function noise({t=0,dur=.1,vol=.25,type="highpass",freq=6000,sweep,bus=sfxBus,q=1}){if(bus!==sfxBus&&bus!==verb.n)vol*=1-.55*NIGHT;
   const a=ctx(),s=a.currentTime+t,src=a.createBufferSource(),fl=a.createBiquadFilter(),g=a.createGain();
   src.buffer=noiseBuf;src.loop=true;fl.type=type;fl.frequency.setValueAtTime(freq,s);fl.Q.value=q;
   if(sweep)fl.frequency.exponentialRampToValueAtTime(sweep,s+dur);
@@ -1208,20 +1383,31 @@ const SONGS={
    if(s%2===0)noise({t,dur:.02,vol:.025,freq:9000,bus:musBus});
  }}
 };
-let want="lobby",cur=null,timer=null,step=0,nextT=0;
-function schedule(){const S=SONGS[cur];if(!S)return;const dt=60/S.bpm/4,now=A.currentTime;
+let want="lobby",cur=null,timer=null,step=0,nextT=0,src=null;
+/* Songs play from small recorded loops of the same code-made music (smoother on slow devices). Until a file has loaded,
+   or if it can't load, the song is made live by the sequencer instead. */
+// Test switch: the recorded loops are only used with ?music=files in the address; everyone else gets the live code music.
+const FILEMODE=false;  // recorded loops are parked on the possible-updates branch
+const FILES=FILEMODE?(G.music||{}):{},BUF={},LOADING={};
+const decode=ab=>new Promise((res,rej)=>{const p=A.decodeAudioData(ab,res,rej);if(p&&p.then)p.then(res,rej)});
+function load(k){if(!FILES[k]||BUF[k]||LOADING[k])return LOADING[k];
+  LOADING[k]=fetch(G.musicBase+k+".mp3").then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(decode).then(b=>{BUF[k]=b;if(cur===k&&!src)startSong(k)}).catch(noop);return LOADING[k]}
+function preload(){if(!A)return;const ks=[...new Set(Object.values(G.songs))];ks.sort((a,b)=>(b===G.songs[want])-(a===G.songs[want]));ks.reduce((p,k)=>p.then(()=>load(k)),Promise.resolve())}
+function schedule(){const S=SONGS[cur];if(!S)return;const n=window.SKY?SKY.now().night:0;if(Math.abs(n-NIGHT)>.01)setNight(n);const dt=60/(S.bpm*(1-.1*NIGHT))/4,now=A.currentTime;
   if(nextT<now+.02){const skip=Math.ceil((now+.05-nextT)/dt);step=(step+skip)%S.steps;nextT+=skip*dt}
-  while(nextT<now+.6){try{S.play(step,nextT-now)}catch(e){}step=(step+1)%S.steps;nextT+=dt}}
+  while(nextT<now+.6){try{S.play(step,nextT-now);if(NIGHT>.05&&step%32===0)tone({t:nextT-now,n:[84,86,88,91,93,96][Math.random()*6|0],type:"sine",dur:1.6,vol:.03*NIGHT,att:.01,bus:musBus})}catch(e){}step=(step+1)%S.steps;nextT+=dt}}
 function startSong(k){
-  clearInterval(timer);timer=null;
+  clearInterval(timer);timer=null;if(src){const s=src;src=null;try{s.stop(A.currentTime+1.2)}catch(e){}}
   if(musBus&&musBus!==musRoot){const g=musBus;g.gain.setTargetAtTime(0,A.currentTime,.12);setTimeout(()=>{try{g.disconnect()}catch(e){}},1500)}
   musBus=musRoot;cur=k;delete SONGS.pad;if(!k)return;
   musBus=A.createGain();musBus.gain.setValueAtTime(.0001,A.currentTime);musBus.gain.setTargetAtTime(1,A.currentTime,.2);musBus.connect(musRoot);
-  step=0;nextT=A.currentTime+.12;timer=setInterval(schedule,90)}
+  const f=FILES[k],b=BUF[k];
+  if(f&&b){src=A.createBufferSource();src.buffer=b;src.loop=true;src.loopStart=f.pad;src.loopEnd=f.pad+f.L;const g=A.createGain();g.gain.value=f.gain;src.connect(g);g.connect(musBus);src.start(A.currentTime+.03,f.pad);return}
+  load(k);step=0;nextT=A.currentTime+.12;timer=setInterval(schedule,90)}
 function applyMusic(){const k=st.mu&&A&&A.state==="running"&&!document.hidden&&Date.now()>=holdUntil?(G.songs[want]||null):null;if(k!==cur)startSong(k)}
-function wake(){if(!(st.fx||st.mu))return;ctx();if(A.state!=="running")A.resume().then(applyMusic,noop);else applyMusic()}
+function wake(){if(!(st.fx||st.mu))return;ctx();if(st.mu)preload();if(A.state!=="running")A.resume().then(applyMusic,noop);else applyMusic()}
 SND.on=()=>st.fx;
-SND.state=()=>({music:cur,want,audio:A?A.state:"none"});
+SND.state=()=>({music:cur,want,audio:A?A.state:"none",file:!!src});
 SND.play=(name,...a)=>{if(!st.fx||document.hidden)return;const f=D[name];if(!f)return;ctx();if(A.state!=="running")A.resume().catch(noop);try{f(...a)}catch(e){}};
 SND.music=k=>{want=k;if(A)applyMusic()};
 SND.hold=ms=>{holdUntil=Date.now()+ms;if(A)applyMusic();setTimeout(()=>{if(A)applyMusic()},ms+50)};

@@ -16,6 +16,10 @@ export const EGGS = [
   ["moon", "Wishing Star", "Made a wish on a shooting star"],
   ["retro", "Retro Mode", "Switched to the old four-shade screen"],
   ["evolve", "Evolution", "Watched the emblem evolve"],
+  ["owl", "Night Owl", "Finished the Daily Catch after midnight"],
+  ["fullmoon", "Full Moon", "Saw a shadow cross the full moon"],
+  ["sunny", "Sunny Day", "Made the sunlight harsh"],
+  ["bird", "Early Bird", "Finished the Daily Catch at dawn"],
 ];
 
 export const MILES = [
@@ -29,6 +33,8 @@ export const MILES = [
   ["mball", "Master Ball Pro", "Answer 10 Impossible questions right in daily sets", s => [s.topRight, 10]],
   ["s10", "On a Roll", "Reach a 10-question streak in Endless", s => [s.best, 10]],
   ["s25", "Unstoppable", "Reach a 25-question streak in Endless", s => [s.best, 25]],
+  ["w7", "Steady Trainer", "Play the Daily Catch 7 days in a row", s => [s.streak, 7]],
+  ["w30", "Dedicated Trainer", "Play the Daily Catch 30 days in a row", s => [s.streak, 30]],
   ["hunter", "Secret Hunter", "Find every secret", s => [s.secrets, EGGS.length]],
 ];
 
@@ -80,6 +86,7 @@ export function statsFrom(keys, tierOf = () => null) {
     fullDay: list.some(d => SETS.every(k => d[k])) ? 1 : 0,
     perfectDay: list.some(d => SETS.every(k => perfect(d[k]))) ? 1 : 0,
     topRight, best: endless.best || 0,
+    streak: (() => { const ds = Object.keys(days).filter(d => days[d].main).sort(); let b = 0, r = 0; ds.forEach((d, i) => { r = i && Math.round((Date.parse(d) - Date.parse(ds[i - 1])) / 864e5) === 1 ? r + 1 : 1; b = Math.max(b, r); }); return b; })(),
     secrets: Array.isArray(secrets) ? secrets.filter(id => EGGS.some(e => e[0] === id)).length : 0,
   };
 }
