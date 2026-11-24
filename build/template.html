@@ -576,6 +576,10 @@ h1{animation:pkBounce .8s cubic-bezier(.2,1.6,.4,1) both}
 /* battle scene */
 .pk-battle{border:4px solid var(--frame);border-radius:10px;overflow:hidden;position:relative;user-select:none}
 .pk-field{position:relative;height:200px;background:linear-gradient(180deg,#bfe7ff 0%,#e6f6ff 45%,#b6e39c 46%,#8fd172 100%);overflow:hidden}
+.pk-skip{position:absolute;right:10px;bottom:8px;z-index:3;font:400 10px/1 "Press Start 2P",monospace;color:#fff;background:rgba(20,24,60,.72);padding:6px 8px;border-radius:6px;letter-spacing:.5px;pointer-events:none;animation:pkSkip 1.1s steps(2) infinite}
+.pk-enc .pk-skip{bottom:18px;right:50%;transform:translateX(50%)}
+.pk-skip.in-battle{bottom:auto;top:8px}
+@keyframes pkSkip{50%{opacity:.55}}
 .pk-field.night{background:linear-gradient(180deg,#30407c 0%,#4b5fa8 45%,#3f7d4b 46%,#2f6a3c 100%)}
 .pk-plat{position:absolute;border-radius:50%;background:radial-gradient(ellipse at 50% 40%,#d9f0b8 0 45%,#a7d47f 46% 70%,#7fb35c 71%);box-shadow:0 4px 0 rgba(0,0,0,.12)}
 .pk-plat.e{right:5%;top:96px;width:42%;max-width:190px;height:34px}
@@ -695,9 +699,12 @@ function encounter(){if(R)return Promise.resolve();window.SND&&SND.play("wipe");
   const o=document.createElement("div");o.className="pk-enc";o.innerHTML=Array.from({length:8},(_,i)=>`<div class="bar" style="top:${i*12.5}%;height:12.6%"></div>`).join("");document.body.appendChild(o);
   o.animate([{background:"#fff"},{background:"transparent"},{background:"#fff"},{background:"transparent"},{background:"#fff"},{background:"transparent"}],{duration:420});
   const bars=[...o.children];bars.forEach(b=>b.style.transform="scaleX(0)");
-  return new Promise(res=>setTimeout(()=>{
+  o.insertAdjacentHTML("beforeend",'<div class="pk-skip">Tap to skip</div>');
+  return new Promise(res=>{let over=false;const done=()=>{if(over)return;over=true;res()};
+   o.style.pointerEvents="auto";o.addEventListener("click",()=>{o.remove();done()});
+   setTimeout(()=>{if(over)return;
     const anims=bars.map((b,i)=>b.animate([{transform:`scaleX(0)`,transformOrigin:i%2?"right":"left"},{transform:"scaleX(1)",transformOrigin:i%2?"right":"left",offset:.45},{transform:"scaleX(1)",transformOrigin:i%2?"right":"left",offset:.6},{transform:"scaleX(0)",transformOrigin:i%2?"left":"right"}],{duration:900,easing:"steps(10)",fill:"forwards"}));
-    setTimeout(res,520);anims[0].onfinish=()=>o.remove()},420))}
+    setTimeout(done,520);anims[0].onfinish=()=>o.remove()},420)})}
 
 /* ---- the battle scene ---- */
 function scene(q,label,caughtNow,total){
@@ -736,25 +743,26 @@ async function throwBall(ok,after){
   answered=true;
   if(!ball||!foe){after();return}
   if(typing)typing.done();
-  const aborts=[],anims=[],A=(el,k,o)=>{const a=el.animate(k,o);anims.push(a);return a};
-  let skipped=false;const skip=()=>{if(skipped)return;skipped=true;anims.forEach(a=>{try{a.finish()}catch(e){}});aborts.forEach(f=>f())};
-  app.querySelector(".pk-battle").addEventListener("click",skip);
+  const aborts=[],anims=[],A=(el,k,o)=>{const a=el.animate(k,o);anims.push(a);if(skipped)try{a.finish()}catch(e){}return a};
+  let skipped=false;const zz=ms=>skipped?Promise.resolve():sleep(ms,aborts);const skip=()=>{if(skipped)return;skipped=true;anims.forEach(a=>{try{a.finish()}catch(e){}});aborts.forEach(f=>f())};
+  const bt=app.querySelector(".pk-battle");bt.addEventListener("click",skip);
+  if(!R){bt.insertAdjacentHTML("beforeend",'<div class="pk-skip in-battle">Tap to skip</div>');const hint=bt.querySelector(".pk-skip.in-battle"),fin=after;after=(...a)=>{hint&&hint.remove();return fin(...a)}}
   if(R){window.SND&&SND.play(ok?"caught":"brokeFree");hp.style.width=ok?"0%":"100%";type(tx,ok?"Gotcha! The wild question was caught!":"Oh no! The question broke free!");after();return}
   hp.style.width=ok?"12%":"55%";hp.className=ok?"low":"mid";
-  await sleep(280,aborts);
+  await zz(280);
   const fr=field.getBoundingClientRect(),br=ball.getBoundingClientRect(),or=foe.getBoundingClientRect();
   const dx=or.left+or.width/2-(br.left+br.width/2),dy=or.top+or.height*.7-(br.top+br.height/2);
   ball.style.opacity=1;window.SND&&SND.play("throw");
   A(ball,[{transform:"translate(0,0) rotate(0)"},{transform:`translate(${dx*.5}px,${dy-60}px) rotate(360deg)`,offset:.5},{transform:`translate(${dx}px,${dy}px) rotate(720deg)`}],{duration:520,easing:"linear",fill:"forwards"});
-  await sleep(520,aborts);
+  await zz(520);
   A(white,[{opacity:0},{opacity:.85},{opacity:0}],{duration:260});
   const cap=A(foe,[{transform:"scale(1)",filter:"brightness(1)"},{transform:"scale(1.1)",filter:"brightness(3)",offset:.3},{transform:"scale(0)",filter:"brightness(3)"}],{duration:320,fill:"forwards"});
-  await sleep(340,aborts);
+  await zz(340);
   const base=`translate(${dx}px,${dy}px)`;
   A(ball,[{transform:base},{transform:`translate(${dx}px,${dy+14}px)`}],{duration:160,fill:"forwards",easing:"ease-in"});
-  await sleep(200,aborts);
+  await zz(200);
   const tb=`translate(${dx}px,${dy+14}px)`,wb=[{transform:tb+" rotate(0)"},{transform:tb+" rotate(-24deg)",offset:.25},{transform:tb+" rotate(24deg)",offset:.75},{transform:tb+" rotate(0)"}];
-  for(let k=0;k<(ok?3:1);k++){if(!skipped)window.SND&&SND.play("wobble");A(ball,wb,{duration:340,easing:"ease-in-out"});await sleep(470,aborts)}
+  for(let k=0;k<(ok?3:1);k++){if(!skipped)window.SND&&SND.play("wobble");A(ball,wb,{duration:340,easing:"ease-in-out"});await zz(470)}
   if(!field.isConnected){after();return}
   if(ok){
     for(let k=0;k<3;k++){const s=document.createElement("span");s.className="pk-star";const cx=br.left-fr.left+dx+12,cy=br.top-fr.top+dy+10;s.style.left=cx+"px";s.style.top=cy+"px";field.appendChild(s);
@@ -767,12 +775,12 @@ async function throwBall(ok,after){
     A(white,[{opacity:0},{opacity:.9},{opacity:0}],{duration:240});
     A(ball,[{transform:tb+" scale(1)",opacity:1},{transform:tb+" scale(1.8)",opacity:0}],{duration:240,fill:"forwards"});
     cap.cancel();A(foe,[{transform:"scale(0)",filter:"brightness(3)"},{transform:"scale(1.1)",filter:"brightness(2)",offset:.6},{transform:"scale(1)",filter:"brightness(1)"}],{duration:300});
-    await sleep(320,aborts);
+    await zz(320);
     A(foe,[{transform:"translateX(0)"},{transform:"translateX(-6px)"},{transform:"translateX(6px)"},{transform:"translateX(0)"}],{duration:300,iterations:2});
     hp.style.width="100%";hp.className="";
     window.SND&&SND.play("brokeFree");type(tx,"Oh no! The question broke free!");
   }
-  await sleep(skipped?0:250,aborts);
+  await zz(skipped?0:250,aborts);
   after();
 }
 
