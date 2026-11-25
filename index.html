@@ -170,7 +170,7 @@ footer a{color:#fff}
     <button class="tab" role="tab" id="tab-bank" data-v="bank">Question Bank</button>
   </nav>
   <main id="app" class="panel" aria-live="polite"></main>
-  <footer>Questions come from Bulbapedia, the official Pokédex on pokemon.com, the Pokémon Fandom wiki and Wikipedia. Every answer links its source.<br><br>Daily Poké Catch is an unofficial fan game. Pokémon and all related names are trademarks of Nintendo, Game Freak, Creatures Inc. and The Pokémon Company. This site is not affiliated with or endorsed by them.<br><br><details class="ver"><summary><span>v2.20 · update #8</span></summary><ol><li><b>v2.20</b> <span>2026-11-24</span> Real-time day and night: the sky, sun and moon follow your clock, and the music gets a night version. Your Daily stats and how everyone did today, plus 4 new secrets and 2 streak achievements</li><li><b>v2.11</b> <span>2026-11-23</span> Fixed the Arcanine questions: its Pokédex category is &quot;Legendary Pokémon&quot;, but it isn&#x27;t a Legendary</li><li><b>v2.10</b> <span>2026-11-22</span> Sound effects and music (off until you turn them on with the speaker button)</li><li><b>v2.01</b> <span>2026-11-21</span> Discord: /achievements, and progress in the Discord Activity is saved to your Discord account</li><li><b>v2.00</b> <span>2026-11-21</span> New look (battle screens, catch animations, night route with tall grass), an Achievements tab with 5 secrets to find, and a fix to the Alolan Rattata question</li><li><b>v1.02</b> <span>2026-10-30</span> Fixed repeating daily questions: nothing repeats until a difficulty&#x27;s whole pool has been played</li><li><b>v1.01</b> <span>2026-10-21</span> New logo: a ring of the 18 type colors</li><li><b>v1.00</b> <span>2026-10-20</span> Launch: Daily Catch, By Difficulty, Generations &amp; Topics, Who&#x27;s That Pokémon?, Endless, Question Bank, Sync devices and the Discord bot</li></ol></details><button class="syncbtn" id="syncBtn" type="button">Sync devices</button><br><span class="credit">Coded with Claude (Opus 5.5) by Anthropic</span></footer>
+  <footer>Questions come from Bulbapedia, the official Pokédex on pokemon.com, the Pokémon Fandom wiki and Wikipedia. Every answer links its source.<br><br>Daily Poké Catch is an unofficial fan game. Pokémon and all related names are trademarks of Nintendo, Game Freak, Creatures Inc. and The Pokémon Company. This site is not affiliated with or endorsed by them.<br><br><details class="ver"><summary><span>v2.30 · update #9</span></summary><ol><li><b>v2.30</b> <span>2026-11-25</span> Real sky events: eclipses, blood moons, supermoons, blue moons and meteor showers on their real dates. Tap to skip the battle intro and catch, the full-moon shadow passes once per full moon with its own cry, and 8 new secrets (including First Catch for the quickest trainer after midnight)</li><li><b>v2.20</b> <span>2026-11-24</span> Real-time day and night: the sky, sun and moon follow your clock, and the music gets a night version. Your Daily stats and how everyone did today, plus 4 new secrets and 2 streak achievements</li><li><b>v2.11</b> <span>2026-11-23</span> Fixed the Arcanine questions: its Pokédex category is &quot;Legendary Pokémon&quot;, but it isn&#x27;t a Legendary</li><li><b>v2.10</b> <span>2026-11-22</span> Sound effects and music (off until you turn them on with the speaker button)</li><li><b>v2.01</b> <span>2026-11-21</span> Discord: /achievements, and progress in the Discord Activity is saved to your Discord account</li><li><b>v2.00</b> <span>2026-11-21</span> New look (battle screens, catch animations, night route with tall grass), an Achievements tab with 5 secrets to find, and a fix to the Alolan Rattata question</li><li><b>v1.02</b> <span>2026-10-30</span> Fixed repeating daily questions: nothing repeats until a difficulty&#x27;s whole pool has been played</li><li><b>v1.01</b> <span>2026-10-21</span> New logo: a ring of the 18 type colors</li><li><b>v1.00</b> <span>2026-10-20</span> Launch: Daily Catch, By Difficulty, Generations &amp; Topics, Who&#x27;s That Pokémon?, Endless, Question Bank, Sync devices and the Discord bot</li></ol></details><button class="syncbtn" id="syncBtn" type="button">Sync devices</button><br><span class="credit">Coded with Claude (Opus 5.5) by Anthropic</span></footer>
 </div>
 
 <script>
@@ -1004,7 +1004,15 @@ const EGGS=[
  ["owl","Night Owl","Finished the Daily Catch after midnight","Trainers who play after midnight see things others don't."],
  ["fullmoon","Full Moon","Saw a shadow cross the full moon","Once a month, look up at the full moon."],
  ["sunny","Sunny Day","Made the sunlight harsh","Look up while the sun is out."],
- ["bird","Early Bird","Finished the Daily Catch at dawn","The early trainer catches the question. Play as the sun comes up."]];
+ ["bird","Early Bird","Finished the Daily Catch at dawn","The early trainer catches the question. Play as the sun comes up."],
+ ["berries","Berry Picker","Shook berries out of a bush","Something in the grass is worth shaking."],
+ ["birds","Bird Watcher","Startled a flock of birds","Look up during the day."],
+ ["rain","Rain Dance","Made it rain","Tap the open sky like you're calling the weather."],
+ ["cap","Lost and Found","Found a lost cap in the grass","Keep an eye on the grass during the day."],
+ ["fireflies","Firefly Night","Woke up the fireflies","Little lights drift over the grass at night."],
+ ["meteor","Stargazer","Caught three falling stars in a meteor shower","A few nights a year, the sky rains stars."],
+ ["eclipse","Eclipse Chaser","Tapped the sun or moon during an eclipse","On a real eclipse day, tap whatever goes dark."],
+ ["first","First Catch","Finished a Daily Catch sooner after midnight than anyone else","Be the quickest trainer after your own midnight. It's decided the next day."]];
 let queue=[];
 /* dialog-box messages, typed out, tap to continue */
 let dEl=null,dTimer;
@@ -1143,8 +1151,8 @@ const YS=(()=>{
   // a random ID for this device, so its result counts once; nothing else about the player is sent
   const dev=()=>{let v=store.get("pokecatch:dev");if(typeof v!=="string"||!/^[a-z0-9]{24}$/.test(v)){v=Array.from(crypto.getRandomValues(new Uint8Array(24)),b=>"abcdefghijklmnopqrstuvwxyz0123456789"[b%36]).join("");store.set("pokecatch:dev",v)}return v};
   async function everyone(post){
-    try{const opt=post?{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({dev:dev(),ids:S.qs.map(q=>q.id),marks:S.marks})}:{};
-      const r=await fetch(API+(post?"/stats/result":"/stats/daily"),opt);return r.ok?await r.json():null}catch(e){return null}}
+    try{const opt=post?{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({dev:dev(),day:dayKey,mins:(d=>d.getHours()*60+d.getMinutes())(new Date()),ids:S.qs.map(q=>q.id),marks:S.marks})}:{};
+      const r=await fetch(API+(post?"/stats/result":"/stats/daily?day="+dayKey),opt);return r.ok?await r.json():null}catch(e){return null}}
   function everyoneHTML(g,score){
     if(!g)return "";
     if(!g.dist)return `<section class="gs"><h3>How everyone did today</h3><p class="ys-note">Everyone's results show up once ${g.min} players have finished today's Daily Catch (${g.n} so far). Check back later!</p></section>`;
@@ -1184,6 +1192,175 @@ const _rys=results;results=function(fresh){_rys.apply(this,arguments);YS.addToRe
 // the real moon phase (0 = new, 0.5 = full); a full moon is within about a day of 0.5
 const moonPhase=()=>{const syn=29.530588853,ref=Date.UTC(2000,0,6,18,14)/864e5;return((((Date.now()/864e5-ref)%syn)+syn)%syn)/syn};
 const fullMoon=()=>window.__fullMoon===true||Math.abs(moonPhase()-.5)<.034;
+/* ===== Sky events on their real dates: eclipses, blood moons, supermoons, blue moons and meteor showers =====
+   Dates and times are UTC. Eclipses: NASA's eclipse tables (a few times rounded). Supermoons: Fred Espenak's table via EarthSky.
+   Everyone sees an event on its day, wherever they are; solar ones in the daytime, lunar ones at night. */
+const EV=(()=>{
+  const SOLAR={"2027-02-06T16:00":"annular","2027-08-02T10:07":"total","2028-01-26T15:08":"annular","2028-07-22T02:56":"total","2029-01-14T17:13":"partial",
+    "2029-06-12T04:06":"partial","2029-07-11T15:37":"partial","2029-12-05T15:03":"partial","2030-06-01T06:29":"annular","2030-11-25T06:51":"total"};
+  const LUNAR={"2027-02-20T23:13":"penumbral","2027-07-18T16:03":"penumbral","2027-08-17T07:14":"penumbral","2028-01-12T04:14":"partial","2028-07-06T18:20":"partial",
+    "2028-12-31T16:53":"total","2029-06-26T03:23":"total","2029-12-20T22:43":"total","2030-06-15T18:34":"partial","2030-12-09T22:28":"penumbral"};
+  const SUPER=["2026-11-24","2026-12-24","2027-01-22","2027-02-20","2028-01-12","2028-02-10","2028-03-11","2029-02-28","2029-03-30","2029-04-28","2029-10-07","2030-06-15"];
+  const BLUE=["2027-05-20","2028-12-31"];
+  const SHOWERS=[["Quadrantids",1,3],["Lyrids",4,22],["Eta Aquariids",5,5],["Perseids",8,12],["Orionids",10,21],["Leonids",11,17],["Geminids",12,14]];
+  const near=(map,now,win)=>{for(const k in map)if(Math.abs(now-Date.parse(k+":00Z"))<win)return map[k];return null};
+  const nearDay=(list,now)=>list.some(d=>Math.abs(now-Date.parse(d+"T12:00:00Z"))<36*36e5);
+  // window.__skyEvent lets the preview page try an event: {solar:"total"}, {lunar:"total"}, {supermoon:true}, {blue:true}, {shower:"Geminids"}
+  function today(){const now=Date.now(),f=window.__skyEvent||{},d=new Date();
+    let shower=f.shower||null;
+    if(!f.shower&&!("shower" in f))for(const [n,m,dd] of SHOWERS){const p=new Date(d.getFullYear(),m-1,dd);if(d>=p-864e5&&d<+p+2*864e5){shower=n;break}}
+    return {solar:"solar" in f?f.solar:near(SOLAR,now,14*36e5),lunar:"lunar" in f?f.lunar:near(LUNAR,now,14*36e5),
+      supermoon:"supermoon" in f?f.supermoon:nearDay(SUPER,now),blue:"blue" in f?f.blue:nearDay(BLUE,now),shower}}
+  let C=null,meteorT=0,caught=0;
+  function init(cfg){C=cfg;
+    const css=document.createElement("style");css.textContent=`
+${C.moon}>.ev-shade{position:absolute;inset:0;border-radius:50%;pointer-events:none;opacity:0;transition:opacity 2s;background:radial-gradient(circle at 26% 36%,rgba(70,12,6,.9) 0 48%,rgba(70,12,6,.4) 52%,transparent 56%)}
+html.ev-lunar-partial ${C.moon}>.ev-shade{opacity:1}
+html.ev-lunar-total ${C.moon}>.ev-shade{opacity:.9;background:radial-gradient(circle at 42% 38%,#e06a3a,#9a2614 55%,#5e1209 72%,transparent 74%)}
+html.ev-lunar-total ${C.moon}{filter:sepia(1) saturate(5) hue-rotate(-28deg) brightness(.72) drop-shadow(0 0 18px rgba(255,80,40,.6)) drop-shadow(0 0 40px rgba(255,60,30,.3))!important}
+html.ev-lunar-penumbral ${C.moon}{filter:brightness(.72) sepia(.4) drop-shadow(0 0 10px rgba(255,200,170,.25))!important}
+html.ev-super ${C.moon}{scale:1.3}
+html.ev-blue ${C.moon}{filter:saturate(.5) hue-rotate(185deg) brightness(1.08) drop-shadow(0 0 16px rgba(140,190,255,.7)) drop-shadow(0 0 40px rgba(120,170,255,.35))!important}
+${C.sun}>.ev-disc{position:absolute;left:50%;top:50%;width:${C.disc}px;height:${C.disc}px;margin:${-C.disc/2}px 0 0 ${-C.disc/2}px;border-radius:50%;background:#0b0f24;opacity:0;transition:opacity 2s,transform 2s;pointer-events:none}
+html.ev-solar-total ${C.sun}>.ev-disc{opacity:1;box-shadow:0 0 0 2px rgba(255,255,240,.9),0 0 26px 8px rgba(255,250,225,.75),0 0 70px 24px rgba(220,230,255,.35)}
+html.ev-solar-annular ${C.sun}>.ev-disc{opacity:1;transform:scale(.82);box-shadow:0 0 0 ${Math.round(C.disc*.09)}px #ffd56a,0 0 24px 10px rgba(255,170,60,.6)}
+html.ev-solar-partial ${C.sun}>.ev-disc{opacity:.96;transform:translate(34%,-22%)}
+.ev-dim{position:absolute;inset:0;pointer-events:none;background:#080a28;opacity:0;transition:opacity 3s}
+html.ev-solar-total .ev-dim{opacity:.5}html.ev-solar-annular .ev-dim{opacity:.18}html.ev-solar-partial .ev-dim{opacity:.1}
+.ev-meteor{position:fixed;z-index:2;width:150px;height:3px;border-radius:2px;pointer-events:none;background:linear-gradient(90deg,transparent,#fff 75%,#e6f0ff);box-shadow:0 0 10px #fff,0 0 20px #9cc8ff}`;
+    document.head.appendChild(css);
+    const m=document.querySelector(C.moon),s=document.querySelector(C.sun),sky=document.querySelector(C.sky);
+    if(m&&!m.querySelector(".ev-shade"))m.insertAdjacentHTML("beforeend",'<i class="ev-shade"></i>');
+    if(s&&!s.querySelector(".ev-disc"))s.insertAdjacentHTML("beforeend",'<i class="ev-disc"></i>');
+    if(sky&&!sky.querySelector(".ev-dim")){const d=document.createElement("div");d.className="ev-dim";sky.appendChild(d)}
+    apply();setInterval(apply,60000);
+    // tap the sun or moon during an eclipse; tap a falling star during a meteor shower
+    document.addEventListener("click",e=>{
+      if(e.target.closest("button,a,input,select,textarea,label"))return;
+      const hit=(el,p)=>{if(!el)return false;const r=el.getBoundingClientRect();return e.clientX>=r.left-p&&e.clientX<=r.right+p&&e.clientY>=r.top-p&&e.clientY<=r.bottom+p};
+      const ev=today(),night=window.SKY&&SKY.isNight();
+      for(const st of document.querySelectorAll(".ev-meteor"))if(!st.dataset.got&&hit(st,22)){st.dataset.got=1;e.stopImmediatePropagation();
+        window.SND&&SND.play("meteor");caught++;st.style.boxShadow="0 0 18px #fff,0 0 40px #ffe27a";
+        if(caught===3){C.say("Stargazer",`You caught three falling stars during the ${ev.shower||"meteor shower"}.`);C.secret("meteor")}return}
+      if(e.target.closest(C.skip))return;
+      const lunar=night&&ev.lunar&&hit(document.querySelector(C.moon),12),solar=!night&&ev.solar&&hit(document.querySelector(C.sun).querySelector(".ev-disc"),20);
+      if(lunar||solar){e.stopImmediatePropagation();window.SND&&SND.play("eclipse");
+        C.say("Eclipse Chaser",lunar?{total:"A blood moon! Earth's shadow turned the moon red tonight.",partial:"Earth's shadow is taking a bite out of the moon tonight.",penumbral:"The moon looks a little dusky tonight. Earth's faint outer shadow is passing over it."}[ev.lunar]
+          :{total:"A total solar eclipse! The moon covered the sun completely.",annular:"A ring of fire! The moon is too small to cover the whole sun today.",partial:"The moon is taking a bite out of the sun today."}[ev.solar]);
+        C.secret("eclipse")}
+    },true);
+  }
+  function apply(){if(!C)return;const ev=today(),h=document.documentElement,night=!window.SKY||SKY.isNight();
+    const set=(c,on)=>h.classList.toggle(c,!!on);
+    ["total","partial","penumbral"].forEach(k=>set("ev-lunar-"+k,night&&ev.lunar===k));
+    ["total","annular","partial"].forEach(k=>set("ev-solar-"+k,!night&&ev.solar===k));
+    set("ev-super",ev.supermoon);set("ev-blue",ev.blue&&!ev.lunar);set("ev-shower",night&&ev.shower);
+    clearTimeout(meteorT);if(night&&ev.shower)meteorT=setTimeout(meteor,2000+Math.random()*5000)}
+  function meteor(){if(document.visibilityState==="visible"&&!R){const s=document.createElement("div");s.className="ev-meteor";
+      const x=Math.random()*innerWidth*.8,y=10+Math.random()*innerHeight*.3,a=18+Math.random()*22;s.style.left=x+"px";s.style.top=y+"px";document.body.appendChild(s);
+      const dx=260+Math.random()*200;s.animate([{transform:`translate(0,0) rotate(${a}deg)`,opacity:0},{opacity:1,offset:.15},{transform:`translate(${dx}px,${dx*Math.tan(a*Math.PI/180)}px) rotate(${a}deg)`,opacity:0}],{duration:1500,easing:"ease-in"}).onfinish=()=>s.remove()}
+    const ev=today();if((!window.SKY||SKY.isNight())&&ev.shower)meteorT=setTimeout(meteor,3000+Math.random()*7000)}
+  return {today,init,apply,meteor};
+})();
+window.EV=EV;
+/* "First of the day": after a date is over everywhere, ask the server whether this device finished that date's Daily soonest
+   after its own midnight (only the minutes after midnight are ever sent). */
+YS.checkFirst=async function(onWin){
+  if(window.catchDone||!navigator.onLine)return;const key="pokecatch:firstchk",done=store.get(key)||[];
+  const add=(d,n)=>new Date(Date.parse(d+"T12:00:00Z")+n*864e5).toISOString().slice(0,10);
+  for(const d of [add(dayKey,-1),add(dayKey,-2),add(dayKey,-3)]){
+    if(done.includes(d)||!store.get(`pokecatch1:${d}:main`))continue;
+    try{const API=location.hostname.endsWith("discordsays.com")?"":"https://daily-poke-catch-bot.towfiq-aziz11.workers.dev",dev=store.get("pokecatch:dev");if(!dev)return;
+      const r=await fetch(`${API}/stats/first?day=${d}&dev=${dev}`);if(!r.ok)continue;const j=await r.json();if(j.pending)continue;
+      done.push(d);store.set(key,done.slice(-10));if(j.first)onWin(d)}catch(e){}}
+};
+/* Poké Catch: sky events, the first-of-the-day award, and five new secrets out in the field:
+   a berry bush, a flock of birds, a rain dance, a lost cap, and fireflies. All made up and generic. */
+{EV.init({moon:".pk-moon",sun:".pk-sun",sky:".pk-night",disc:58,skip:"button,a,input,select,textarea,label,.panel,.tabs,.egg-dlg,.emblem,#date",
+  say:(t,m)=>say(t,m),secret:id=>secret(id)});
+ const prettyDay=d=>new Date(d+"T12:00:00").toLocaleDateString(undefined,{month:"long",day:"numeric"});
+ setTimeout(()=>YS.checkFirst(d=>{say("First Catch",`You finished the ${prettyDay(d)} Daily Catch sooner after your midnight than any other trainer did after theirs.`);secret("first")}),4000);
+
+ const css=document.createElement("style");css.textContent=`
+.pk-bush{position:fixed;z-index:1;bottom:26px;left:6vw;width:84px;height:62px;pointer-events:none;image-rendering:pixelated;transform-origin:50% 100%}
+.pk-bush svg,.pk-cap svg,.pk-birds svg{width:100%;height:100%;display:block}
+.pk-berry{position:fixed;z-index:2;width:12px;height:12px;border-radius:50%;background:#e8384f;box-shadow:inset -2px -2px 0 #a81f33;pointer-events:none}
+.pk-birds{position:fixed;z-index:1;left:-160px;width:140px;height:70px;border:0;padding:0;background:none;cursor:pointer}
+.pk-bird{position:fixed;z-index:2;width:22px;height:12px;pointer-events:none}
+.pk-rain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:0;transition:opacity 1.5s;background:repeating-linear-gradient(105deg,transparent 0 22px,rgba(190,215,255,.55) 22px 24px,transparent 24px 46px);background-size:46px 46px;animation:pkRain .35s linear infinite}
+.pk-rain.on{opacity:1}
+@keyframes pkRain{to{background-position:-12px 46px}}
+body.pk-rainy .pk-night{filter:brightness(.82) saturate(.8)}
+.pk-rainbow{position:fixed;z-index:0;left:50%;bottom:40px;width:min(900px,120vw);height:min(450px,60vw);margin-left:calc(min(900px,120vw)/-2);border-radius:50% 50% 0 0/100% 100% 0 0;pointer-events:none;opacity:0;transition:opacity 2s;
+  background:radial-gradient(circle at 50% 100%,transparent 0 55%,rgba(148,0,211,.4) 55% 58%,rgba(75,0,130,.4) 58% 61%,rgba(0,0,255,.4) 61% 64%,rgba(0,200,0,.4) 64% 67%,rgba(255,255,0,.45) 67% 70%,rgba(255,127,0,.45) 70% 73%,rgba(255,0,0,.45) 73% 76%,transparent 76%)}
+.pk-rainbow.on{opacity:1}
+.pk-cap{position:fixed;z-index:1;bottom:30px;width:44px;height:28px;pointer-events:none;transform:translateY(22px);transition:transform .6s}
+.pk-cap.peek{transform:translateY(0)}
+.pk-fly{position:fixed;z-index:1;width:6px;height:6px;border-radius:50%;background:#f6ff9a;box-shadow:0 0 8px 3px rgba(240,255,120,.75);pointer-events:none;animation:pkFly 3s ease-in-out infinite alternate}
+@keyframes pkFly{0%{opacity:.15;translate:0 0}50%{opacity:1}100%{opacity:.3;translate:18px -22px}}`;document.head.appendChild(css);
+
+ // a berry bush in the grass: shake it three times and berries fall
+ const bush=document.createElement("div");bush.className="pk-bush";bush.innerHTML=`<svg viewBox="0 0 42 31" shape-rendering="crispEdges"><path d="M4 31V18h2v-4h4v-3h5V8h12v3h5v3h4v4h2v13z" fill="#2f7d32"/><path d="M8 31V20h3v-4h5v-3h10v3h5v4h3v11z" fill="#3fa043"/>
+   <rect x="12" y="16" width="3" height="3" fill="#e8384f"/><rect x="25" y="13" width="3" height="3" fill="#e8384f"/><rect x="30" y="21" width="3" height="3" fill="#e8384f"/><rect x="17" y="23" width="3" height="3" fill="#e8384f"/></svg>`;
+ document.body.appendChild(bush);let shakes=0;
+ // a flock of birds now and then by day
+ const birdPath='<path d="M0 6Q5 0 11 6Q17 0 22 6Q17 3 11 8Q5 3 0 6Z" fill="#1d2a4d"/>';
+ let flock=null;
+ function birds(){if(flock||(window.SKY&&SKY.isNight())||document.visibilityState!=="visible")return;
+   const b=document.createElement("button");b.className="pk-birds";b.setAttribute("aria-label","A flock of birds");flock=b;b.style.top=8+Math.random()*16+"vh";
+   b.innerHTML=`<svg viewBox="0 0 140 70">${[[0,30],[24,20],[48,10],[24,42],[48,52]].map(([x,y])=>`<g transform="translate(${x+40} ${y})">${birdPath}</g>`).join("")}</svg>`;
+   document.body.appendChild(b);const fly=b.animate([{transform:"translate(0,0)"},{transform:`translate(${innerWidth+320}px,-30px)`}],{duration:R?10:20000,easing:"linear"});
+   fly.onfinish=()=>{b.remove();flock=null};
+   b.onclick=()=>{if(b.dataset.hit)return;b.dataset.hit=1;fly.cancel();const r=b.getBoundingClientRect();b.remove();flock=null;window.SND&&SND.play("flap");
+     for(let k=0;k<5;k++){const s=document.createElement("div");s.className="pk-bird";s.innerHTML=`<svg viewBox="0 0 22 12">${birdPath}</svg>`;s.style.left=r.left+r.width/2+"px";s.style.top=r.top+r.height/2+"px";document.body.appendChild(s);
+       const a=-Math.PI*(.1+.8*k/4),d=300+Math.random()*200;s.animate([{transform:"translate(0,0) scale(1)"},{transform:`translate(${Math.cos(a)*d}px,${Math.sin(a)*d}px) scale(.6)`,opacity:0}],{duration:R?10:1400,easing:"ease-out"}).onfinish=()=>s.remove()}
+     say("Bird Watcher","You startled a flock of birds. They scattered in every direction.");secret("birds")}}
+ (function loop(){setTimeout(()=>{if(Math.random()<.35&&!playing())birds();loop()},60000+Math.random()*60000)})();
+ window.__birds=birds;
+ // rain dance: tap the open daytime sky five times quickly
+ const rain=document.createElement("div");rain.className="pk-rain";document.body.appendChild(rain);
+ const bow=document.createElement("div");bow.className="pk-rainbow";document.querySelector(".pk-night").before(bow);
+ let taps=[],raining=false;
+ function rainDance(){raining=true;document.body.classList.remove("pk-sunny");document.body.classList.add("pk-rainy");rain.classList.add("on");window.SND&&SND.play("rain");
+   say("Rain Dance","It started to rain!");secret("rain");
+   setTimeout(()=>{rain.classList.remove("on");document.body.classList.remove("pk-rainy");bow.classList.add("on");window.SND&&SND.play("star");
+     setTimeout(()=>{bow.classList.remove("on");raining=false},14000)},R?100:22000)}
+ // a lost cap sometimes peeks out of the grass
+ const cap=document.createElement("div");cap.className="pk-cap";cap.innerHTML=`<svg viewBox="0 0 22 14" shape-rendering="crispEdges"><path d="M4 12V6h2V4h2V2h8v2h2v2h1v6z" fill="#2f6fd6"/><path d="M6 12V7h2V5h4v7z" fill="#5b93ee"/><path d="M14 10h8v2h-8z" fill="#1f4fa8"/><rect x="10" y="1" width="2" height="2" fill="#1f4fa8"/></svg>`;
+ document.body.appendChild(cap);
+ function peekCap(){if(cap.classList.contains("peek")||(window.SKY&&SKY.isNight()))return;cap.style.left=20+Math.random()*(innerWidth-120)+"px";cap.classList.add("peek");
+   setTimeout(()=>cap.classList.remove("peek"),25000)}
+ if(Math.random()<.45)setTimeout(peekCap,30000+Math.random()*60000);
+ window.__peekCap=peekCap;
+ // fireflies drift over the grass at night; tap one and the whole field lights up
+ let flies=[];
+ function fireflies(n){flies.forEach(f=>f.remove());flies=[];if(!(window.SKY&&SKY.isNight()))return;
+   for(let k=0;k<n;k++){const f=document.createElement("i");f.className="pk-fly";f.style.left=Math.random()*innerWidth+"px";f.style.bottom=30+Math.random()*90+"px";
+     f.style.animationDuration=2+Math.random()*3+"s";f.style.animationDelay=-Math.random()*3+"s";document.body.appendChild(f);flies.push(f)}}
+ fireflies(4);setInterval(()=>{const n=window.SKY&&SKY.isNight();if(!n&&flies.length&&!lit)fireflies(0);else if(n&&!flies.length)fireflies(4)},30000);
+ let lit=false;
+
+ document.addEventListener("click",e=>{
+   if(e.target.closest("button,a,input,select,textarea,label,.panel,.tabs,.egg-dlg,.emblem,#date"))return;
+   const hit=(el,p)=>{const r=el.getBoundingClientRect();return r.width&&e.clientX>=r.left-p&&e.clientX<=r.right+p&&e.clientY>=r.top-p&&e.clientY<=r.bottom+p};
+   if(hit(bush,8)){e.stopImmediatePropagation();shakes++;window.SND&&SND.play("rustle");
+     bush.animate([{transform:"rotate(0)"},{transform:"rotate(-6deg)"},{transform:"rotate(6deg)"},{transform:"rotate(0)"}],{duration:R?10:360});
+     if(shakes%3===0){const r=bush.getBoundingClientRect();window.SND&&SND.play("berry");
+       for(let k=0;k<4;k++){const b=document.createElement("i");b.className="pk-berry";b.style.left=r.left+14+k*16+"px";b.style.top=r.top+18+"px";document.body.appendChild(b);
+         b.animate([{transform:"translate(0,0)"},{transform:`translate(${(k-1.5)*18}px,${r.height-10}px)`,offset:.6},{transform:`translate(${(k-1.5)*26}px,${r.height-18}px)`,offset:.8},{transform:`translate(${(k-1.5)*30}px,${r.height-10}px)`,opacity:0}],{duration:R?10:1500,easing:"ease-in"}).onfinish=()=>b.remove()}
+       say("Berry Picker","A few berries fell out of the bush. Any wild question would love one.");secret("berries")}return}
+   if(cap.classList.contains("peek")&&hit(cap,10)){e.stopImmediatePropagation();cap.classList.remove("peek");window.SND&&SND.play("cap");
+     const c=cap.cloneNode(true);c.classList.add("peek");document.body.appendChild(c);
+     c.animate([{transform:"translateY(0) rotate(0)"},{transform:"translateY(-160px) rotate(720deg)",offset:.6},{transform:"translateY(-120px) rotate(720deg)",opacity:0}],{duration:R?10:1200,easing:"ease-out"}).onfinish=()=>c.remove();
+     say("Lost and Found","You found someone's lost cap in the grass. They'll be glad to have it back.");secret("cap");return}
+   if(!lit)for(const f of flies)if(hit(f,16)){e.stopImmediatePropagation();lit=true;window.SND&&SND.play("fireflies");fireflies(36);
+     say("Firefly Night","You woke up the fireflies. The whole field is glowing.");secret("fireflies");setTimeout(()=>{lit=false;fireflies(4)},30000);return}
+   // open daytime sky, away from the grass, the sun and the page itself
+   if(window.SKY&&!SKY.isNight()&&!raining&&e.clientY<innerHeight-110&&!hit(document.querySelector(".pk-sun"),14)){const now=performance.now();taps=taps.filter(t=>now-t<3000);taps.push(now);
+     if(taps.length>=5){taps=[];rainDance()}}
+ },true);
+ window.__rainDance=rainDance;
+}
 /* Poké Catch: a mysterious shadow crosses the full moon, and tapping the sun makes the sunlight harsh (Sunny Day) */
 {const css=document.createElement("style");css.textContent=`
 :root{--ys-bg:#fffaf0;--ys-border:3px solid #2b2f55;--ys-r:12px;--ys-ink:#1b1f3b;--ys-h:400 20px/1.1 "Lilita One",sans-serif;--ys-num:400 28px/1 "Lilita One",sans-serif;--ys-track:#efe6d2;--ys-bar:#7f8fd0;--ys-acc:#ffcb05}
@@ -1374,6 +1551,15 @@ D.moonCry=()=>{tone({f:520,slide:1040,type:"pulse",dur:.32,vol:.11,att:.04});ton
   [0,1,2,3,4,5].forEach(k=>tone({t:.3+k*.07,f:1040-k*60,type:"pulse",dur:.09,vol:.09-k*.008,detune:k%2?25:-25}));
   tone({t:.3,f:980,slide:330,type:"triangle",dur:.9,vol:.12,att:.02});tone({t:.3,f:490,slide:165,type:"sine",dur:1,vol:.08,att:.02});
   [1.25,1.4,1.55].forEach((t,k)=>tone({t,n:96-k*5,type:"sine",dur:.25,vol:.035}));noise({t:.25,dur:.7,vol:.035,type:"bandpass",freq:2400,sweep:900,q:2})};
+// sky events
+D.meteor=()=>{[0,.05,.1,.15,.2].forEach((t,k)=>tone({t,n:96-k*2,type:"triangle",dur:.12,vol:.07-k*.01}));noise({dur:.35,vol:.05,type:"highpass",freq:5000})};
+D.eclipse=()=>{tone({f:110,slide:82,type:"triangle",dur:2.2,vol:.16,att:.6});tone({f:165,slide:123,type:"sine",dur:2.2,vol:.1,att:.8});[0,.5,1,1.5].forEach((t,k)=>tone({t:.3+t,n:84-k*3,type:"sine",dur:.6,vol:.05}))};
+// out in the field
+D.flap=()=>{for(let k=0;k<10;k++)noise({t:k*.05,dur:.035,vol:.16-k*.012,type:"bandpass",freq:1400+Math.random()*600,q:2})};
+D.rain=()=>{noise({dur:3,vol:.12,type:"highpass",freq:3500,att:.8});[0,.3,.7,1.1,1.6].forEach(t=>tone({t,n:88+(Math.random()*6|0),type:"sine",dur:.08,vol:.04}))};
+D.berry=()=>{[0,.12,.22,.3].forEach((t,k)=>tone({t,n:76-k*2,type:"pulse12",dur:.06,vol:.08}))};
+D.cap=()=>{[72,76,79,84].forEach((n,k)=>tone({t:k*.07,n,type:"pulse",dur:.08,vol:.08}))};
+D.fireflies=()=>{for(let k=0;k<12;k++)tone({t:k*.09,n:84+[0,4,7,11,12,16][k%6],type:"sine",dur:.3,vol:.05})};
 D.flee=()=>{[0,.07,.14,.21].forEach((t,k)=>noise({t,dur:.04,vol:.18,type:"bandpass",freq:900+k*150,q:4}));[[.32,79],[.4,76],[.48,72],[.56,67]].forEach(([t,n])=>tone({t,n,type:"pulse",dur:.07,vol:.1}));noise({t:.3,dur:.35,vol:.08,type:"bandpass",freq:3000,sweep:600,q:1.5})};
 
 /* ---- music: a small step sequencer that plans a little ahead, and skips late notes rather than cramming them in ---- */

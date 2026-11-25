@@ -149,6 +149,15 @@ D.moonCry=()=>{tone({f:520,slide:1040,type:"pulse",dur:.32,vol:.11,att:.04});ton
   [0,1,2,3,4,5].forEach(k=>tone({t:.3+k*.07,f:1040-k*60,type:"pulse",dur:.09,vol:.09-k*.008,detune:k%2?25:-25}));
   tone({t:.3,f:980,slide:330,type:"triangle",dur:.9,vol:.12,att:.02});tone({t:.3,f:490,slide:165,type:"sine",dur:1,vol:.08,att:.02});
   [1.25,1.4,1.55].forEach((t,k)=>tone({t,n:96-k*5,type:"sine",dur:.25,vol:.035}));noise({t:.25,dur:.7,vol:.035,type:"bandpass",freq:2400,sweep:900,q:2})};
+// sky events
+D.meteor=()=>{[0,.05,.1,.15,.2].forEach((t,k)=>tone({t,n:96-k*2,type:"triangle",dur:.12,vol:.07-k*.01}));noise({dur:.35,vol:.05,type:"highpass",freq:5000})};
+D.eclipse=()=>{tone({f:110,slide:82,type:"triangle",dur:2.2,vol:.16,att:.6});tone({f:165,slide:123,type:"sine",dur:2.2,vol:.1,att:.8});[0,.5,1,1.5].forEach((t,k)=>tone({t:.3+t,n:84-k*3,type:"sine",dur:.6,vol:.05}))};
+// out in the field
+D.flap=()=>{for(let k=0;k<10;k++)noise({t:k*.05,dur:.035,vol:.16-k*.012,type:"bandpass",freq:1400+Math.random()*600,q:2})};
+D.rain=()=>{noise({dur:3,vol:.12,type:"highpass",freq:3500,att:.8});[0,.3,.7,1.1,1.6].forEach(t=>tone({t,n:88+(Math.random()*6|0),type:"sine",dur:.08,vol:.04}))};
+D.berry=()=>{[0,.12,.22,.3].forEach((t,k)=>tone({t,n:76-k*2,type:"pulse12",dur:.06,vol:.08}))};
+D.cap=()=>{[72,76,79,84].forEach((n,k)=>tone({t:k*.07,n,type:"pulse",dur:.08,vol:.08}))};
+D.fireflies=()=>{for(let k=0;k<12;k++)tone({t:k*.09,n:84+[0,4,7,11,12,16][k%6],type:"sine",dur:.3,vol:.05})};
 D.flee=()=>{[0,.07,.14,.21].forEach((t,k)=>noise({t,dur:.04,vol:.18,type:"bandpass",freq:900+k*150,q:4}));[[.32,79],[.4,76],[.48,72],[.56,67]].forEach(([t,n])=>tone({t,n,type:"pulse",dur:.07,vol:.1}));noise({t:.3,dur:.35,vol:.08,type:"bandpass",freq:3000,sweep:600,q:1.5})};
 
 /* ---- music: a small step sequencer that plans a little ahead, and skips late notes rather than cramming them in ---- */

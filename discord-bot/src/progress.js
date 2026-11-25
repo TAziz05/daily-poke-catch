@@ -20,6 +20,13 @@ export const EGGS = [
   ["fullmoon", "Full Moon", "Saw a shadow cross the full moon"],
   ["sunny", "Sunny Day", "Made the sunlight harsh"],
   ["bird", "Early Bird", "Finished the Daily Catch at dawn"],
+  ["berries", "Berry Picker", "Shook berries out of a bush"],
+  ["birds", "Bird Watcher", "Startled a flock of birds"],
+  ["rain", "Rain Dance", "Made it rain"],
+  ["cap", "Lost and Found", "Found a lost cap in the grass"],
+  ["fireflies", "Firefly Night", "Woke up the fireflies"],
+  ["meteor", "Stargazer", "Caught three falling stars in a meteor shower"],
+  ["eclipse", "Eclipse Chaser", "Tapped the sun or moon during an eclipse"],
 ];
 
 export const MILES = [
@@ -107,5 +114,38 @@ export function achievementsEmbed(keys, tierOf, who, color) {
       ...EGGS.map(([id, n, d]) => found.has(id) ? `✨ **${n}** · ${d}${times(counts[id] || 1)}` : "❔ Secret achievement"),
     ].join("\n"),
     footer: { text: "Secrets are found in the full game (/play). Progress there is saved to your Discord account." },
+  };
+}
+
+// The /compare reply: two players side by side, with a 👑 on whoever is ahead in each row.
+export function compareEmbed(a, b, today, color) {
+  const sum = p => {
+    const st = statsFrom(p.keys, p.tierOf), found = new Set(parse(p.keys?.[GAME.prefix + ":secrets"], [])), seen = new Set(parse(p.keys?.[GAME.prefix + ":ach"], []));
+    const re = new RegExp("^" + GAME.dayKey + ":(\\d{4}-\\d{2}-\\d{2}):main$"), mains = [];
+    for (const [k, v] of Object.entries(p.keys || {})) { const m = k.match(re); const r = m && parse(v, null); if (r && Array.isArray(r.marks) && r.marks.length) mains.push({ d: m[1], s: r.marks.filter(Boolean).length }); }
+    const days = mains.map(x => x.d).sort(), set = new Set(days), add = (d, n) => new Date(Date.parse(d + "T12:00:00Z") + n * 864e5).toISOString().slice(0, 10);
+    let cur = 0, d = set.has(today) ? today : add(today, -1); while (set.has(d)) { cur++; d = add(d, -1); }
+    const ach = new Set([...MILES.filter(m => { const [c, g] = m[3](st); return c >= g || seen.has(m[0]); }).map(m => m[0]), ...EGGS.filter(e => found.has(e[0])).map(e => e[0])]);
+    return { who: p.who, played: mains.length, avg: mains.length ? mains.reduce((s, x) => s + x.s, 0) / mains.length : 0, perfect: mains.filter(x => x.s === 5).length,
+      cur, best: st.streak, endless: st.best, ach, secrets: EGGS.filter(e => found.has(e[0])).length };
+  };
+  const A = sum(a), B = sum(b), total = MILES.length + EGGS.length;
+  const rows = [["Days played", x => x.played], ["Average score", x => x.avg, v => v.toFixed(1) + "/5"], ["Perfect 5/5 days", x => x.perfect],
+    ["Current streak", x => x.cur], ["Best streak", x => x.best], ["Best Endless run", x => x.endless],
+    ["Achievements", x => x.ach.size, v => `${v}/${total}`], ["Secrets found", x => x.secrets, v => `${v}/${EGGS.length}`]];
+  let wa = 0, wb = 0;
+  const line = ([label, get, fmt = v => String(v)]) => { const va = get(A), vb = get(B), ca = va > vb ? " 👑" : "", cb = vb > va ? " 👑" : ""; if (ca) wa++; if (cb) wb++;
+    return `**${label}**\n${fmt(va)}${ca}  vs  ${fmt(vb)}${cb}`; };
+  const body = rows.map(line);
+  const name = id => (MILES.find(m => m[0] === id) || EGGS.find(e => e[0] === id) || [id, id])[1];
+  const isSecret = id => EGGS.some(e => e[0] === id);
+  // secrets stay secret: only their count is shown, never their names
+  const only = (x, y) => { const ids = [...x.ach].filter(id => !y.ach.has(id)); const m = ids.filter(id => !isSecret(id)).map(name), s = ids.filter(isSecret).length;
+    return m.length || s ? [...m.slice(0, 6), m.length > 6 ? `+${m.length - 6} more` : null, s ? `${s} secret${s > 1 ? "s" : ""}` : null].filter(Boolean).join(", ") : "nothing yet"; };
+  const lead = wa === wb ? "It's a tie!" : `**${wa > wb ? A.who : B.who}** leads ${Math.max(wa, wb)}–${Math.min(wa, wb)}.`;
+  return {
+    title: `${GAME.name} · ${A.who} vs ${B.who}`, color,
+    description: [lead, "", ...body, "", `**Only ${A.who} has:** ${only(A, B)}`, `**Only ${B.who} has:** ${only(B, A)}`].join("\n"),
+    footer: { text: "Includes progress played in Discord and progress saved to Discord from the full game (/play)." },
   };
 }

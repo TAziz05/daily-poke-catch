@@ -2,7 +2,7 @@
 // Questions come from the website's daily/YYYY-MM.json files, so the bot, the Activity
 // and the website all serve the same Daily Catch each day (America/New_York date).
 import ACTIVITY_JS from "./activity-bundle.js";
-import { GAME, mergeKeys, achievementsEmbed } from "./progress.js";
+import { GAME, mergeKeys, achievementsEmbed, compareEmbed } from "./progress.js";
 import { twitch, twitchCleanup } from "./twitch.js";
 import { count } from "./analytics.js";
 import { dailyStats } from "./daily-stats.js";
@@ -119,6 +119,26 @@ async function achievements(env, ix) {
   } catch (e) {
     console.log("achievements", e.stack || e);
     body = { content: "Couldn't load achievements right now. Try again in a moment." };
+  }
+  await fetch(hook, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+}
+// /compare: you vs a player, or two players, side by side (answers "thinking…" first, like /achievements).
+async function compare(env, ix) {
+  const opt = n => ix.data.options?.find(o => o.name === n)?.value;
+  const p1 = opt("player"), p2 = opt("player2"), U = ix.data.resolved?.users || {};
+  const left = p2 ? U[p1] : ix.member?.user || ix.user, right = p2 ? U[p2] : U[p1];
+  const hook = `${API(env)}/webhooks/${env.DISCORD_APP_ID}/${ix.token}/messages/@original`;
+  let body;
+  try {
+    if (!left || !right || left.id === right.id) body = { content: "Pick someone else to compare with." };
+    else {
+      const [a, b] = await Promise.all([fullProgress(env, left.id), fullProgress(env, right.id)]);
+      const nm = u => u.global_name || u.username;
+      body = { embeds: [compareEmbed({ ...a, who: nm(left) }, { ...b, who: nm(right) }, nyDay(), YELLOW)], allowed_mentions: NO_PINGS };
+    }
+  } catch (e) {
+    console.log("compare", e.stack || e);
+    body = { content: "Couldn't load that comparison right now. Try again in a moment." };
   }
   await fetch(hook, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
 }
@@ -331,6 +351,7 @@ const COMMANDS = [
   { name: "leaderboard", description: "See this server's Daily Poké Catch leaderboard", options: [{ type: 3, name: "period", description: "Which leaderboard", required: false, choices: [{ name: "Today", value: "today" }, { name: "This week", value: "week" }, { name: "All time", value: "all" }] }] },
   { name: "stats", description: "Daily Poké Catch stats for you or another player", options: [{ type: 6, name: "player", description: "Whose stats to show", required: false }] },
   { name: "achievements", description: "Daily Poké Catch achievements for you or another player", options: [{ type: 6, name: "player", description: "Whose achievements to show", required: false }] },
+  { name: "compare", description: "Compare Daily Poké Catch stats and achievements: you vs a player, or any two players", options: [{ type: 6, name: "player", description: "Who to compare with you", required: true }, { type: 6, name: "player2", description: "Compare this player instead of you", required: false }] },
   { name: "play", description: "Open the full Daily Poké Catch game inside Discord" },
   { name: "setchannel", description: "Post the Daily Catch in a channel every morning", default_member_permissions: "32", contexts: [0],
     options: [{ type: 7, name: "channel", description: "Where to post (defaults to this channel)", required: false, channel_types: [0, 5] },
@@ -349,6 +370,7 @@ async function onCommand(env, ix, ctx) {
     case "leaderboard": return leaderboard(env, guild, opt("period") || "today");
     case "stats": return stats(env, ix);
     case "achievements": ctx.waitUntil(achievements(env, ix)); return json({ type: 5 });
+    case "compare": ctx.waitUntil(compare(env, ix)); return json({ type: 5 });
     case "play": return json({ type: 12 });
     case "setchannel": {
       const ch = opt("channel") || ix.channel_id, hour = opt("hour") ?? 9;
@@ -365,7 +387,7 @@ async function onCommand(env, ix, ctx) {
         "A daily Pokémon trivia catch: **1 Easy, 1 Medium, 2 Hard and 1 Impossible** question, the same for everyone. A new catch starts at midnight Eastern.",
         "", "**/daily** · play right here (only you see the questions, your result is shared)",
         "**/play** · open the full game with every mode",
-        "**/leaderboard** · today, this week or all time", "**/stats** · your streak and score history", "**/achievements** · milestones and secrets you've found",
+        "**/leaderboard** · today, this week or all time", "**/stats** · your streak and score history", "**/achievements** · milestones and secrets you've found", "**/compare** · you vs a friend (or any two players), side by side",
         "**/setchannel** · admins: post the catch every morning", "", `Website: ${SITE(env)}/`].join("\n") }] }, true);
   }
   return reply({ content: "Unknown command." }, true);
