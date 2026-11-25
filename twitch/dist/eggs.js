@@ -248,7 +248,7 @@ body.pk-sunny .pk-grass{filter:brightness(1.25) saturate(1.3)}`;document.head.ap
    s.innerHTML=SHADOWS[kind]||SHADOWS.wing;
    document.body.appendChild(s);const y=m.top+m.height/2-30;
    s.animate([{transform:`translate(${m.left-260}px,${y+40}px) scale(.7)`,opacity:0},{opacity:.95,offset:.2},{transform:`translate(${m.left+m.width/2-75}px,${y}px) scale(1)`,opacity:.95,offset:.5},{opacity:.9,offset:.8},{transform:`translate(${m.right+200}px,${y-50}px) scale(.8)`,opacity:0}],{duration:R?10:1700,easing:"ease-in-out"}).onfinish=()=>s.remove();
-   window.SND&&SND.play("wild");
+   window.SND&&SND.play("moonCry");
    setTimeout(()=>{say("Full moon","A mysterious shadow glided across the full moon... then it was gone.");secret("fullmoon")},R?0:1400)}
  let sunnyT;
  function sunnyDay(){window.SND&&SND.play("star");document.body.classList.add("pk-sunny");clearTimeout(sunnyT);sunnyT=setTimeout(()=>document.body.classList.remove("pk-sunny"),60000);
@@ -257,7 +257,10 @@ body.pk-sunny .pk-grass{filter:brightness(1.25) saturate(1.3)}`;document.head.ap
    if(e.target.closest("button,a,input,select,textarea,label,.tabs,.egg-dlg,.emblem,#app"))return;
    const hit=el=>{if(!el)return false;const r=el.getBoundingClientRect();return e.clientX>=r.left-10&&e.clientX<=r.right+10&&e.clientY>=r.top-10&&e.clientY<=r.bottom+10};
    if(window.SKY&&!SKY.isNight()&&hit(document.querySelector(".pk-sun"))){e.stopImmediatePropagation();sunnyDay();return}
-   if(window.SKY&&SKY.isNight()&&fullMoon()&&hit(document.querySelector(".pk-moon"))){e.stopImmediatePropagation();moonShadow()}
+   if(window.SKY&&SKY.isNight()&&fullMoon()&&hit(document.querySelector(".pk-moon"))){e.stopImmediatePropagation();
+     // the shadow only passes once per full moon for each player
+     const cyc=Math.round((Date.now()/864e5-Date.UTC(2000,0,6,18,14)/864e5)/29.530588853-.5),seen=store.get("pokecatch:moonshadow");
+     if(seen===cyc&&!window.__fullMoon)return;store.set("pokecatch:moonshadow",cyc);moonShadow()}
  },true);
  window.__moonShadow=moonShadow;
 }

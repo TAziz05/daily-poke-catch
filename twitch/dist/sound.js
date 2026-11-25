@@ -144,6 +144,11 @@ let after=null;const flush=()=>{const f=after;after=null;if(f)setTimeout(()=>SND
 D.caught=()=>{D.correct();flush()};
 D.brokeFree=()=>{D.wrong();flush()};
 
+// a made-up, mysterious cry for the shadow that crosses the full moon (not any real Pokémon's cry)
+D.moonCry=()=>{tone({f:520,slide:1040,type:"pulse",dur:.32,vol:.11,att:.04});tone({f:260,slide:520,type:"triangle",dur:.32,vol:.12,att:.04});
+  [0,1,2,3,4,5].forEach(k=>tone({t:.3+k*.07,f:1040-k*60,type:"pulse",dur:.09,vol:.09-k*.008,detune:k%2?25:-25}));
+  tone({t:.3,f:980,slide:330,type:"triangle",dur:.9,vol:.12,att:.02});tone({t:.3,f:490,slide:165,type:"sine",dur:1,vol:.08,att:.02});
+  [1.25,1.4,1.55].forEach((t,k)=>tone({t,n:96-k*5,type:"sine",dur:.25,vol:.035}));noise({t:.25,dur:.7,vol:.035,type:"bandpass",freq:2400,sweep:900,q:2})};
 D.flee=()=>{[0,.07,.14,.21].forEach((t,k)=>noise({t,dur:.04,vol:.18,type:"bandpass",freq:900+k*150,q:4}));[[.32,79],[.4,76],[.48,72],[.56,67]].forEach(([t,n])=>tone({t,n,type:"pulse",dur:.07,vol:.1}));noise({t:.3,dur:.35,vol:.08,type:"bandpass",freq:3000,sweep:600,q:1.5})};
 
 /* ---- music: a small step sequencer that plans a little ahead, and skips late notes rather than cramming them in ---- */

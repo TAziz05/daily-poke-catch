@@ -1183,7 +1183,7 @@ body.pk-sunny .pk-grass{filter:brightness(1.25) saturate(1.3)}`;document.head.ap
    s.innerHTML=SHADOWS[kind]||SHADOWS.wing;
    document.body.appendChild(s);const y=m.top+m.height/2-30;
    s.animate([{transform:`translate(${m.left-260}px,${y+40}px) scale(.7)`,opacity:0},{opacity:.95,offset:.2},{transform:`translate(${m.left+m.width/2-75}px,${y}px) scale(1)`,opacity:.95,offset:.5},{opacity:.9,offset:.8},{transform:`translate(${m.right+200}px,${y-50}px) scale(.8)`,opacity:0}],{duration:R?10:1700,easing:"ease-in-out"}).onfinish=()=>s.remove();
-   window.SND&&SND.play("wild");
+   window.SND&&SND.play("moonCry");
    setTimeout(()=>{say("Full moon","A mysterious shadow glided across the full moon... then it was gone.");secret("fullmoon")},R?0:1400)}
  let sunnyT;
  function sunnyDay(){window.SND&&SND.play("star");document.body.classList.add("pk-sunny");clearTimeout(sunnyT);sunnyT=setTimeout(()=>document.body.classList.remove("pk-sunny"),60000);
@@ -1192,7 +1192,10 @@ body.pk-sunny .pk-grass{filter:brightness(1.25) saturate(1.3)}`;document.head.ap
    if(e.target.closest("button,a,input,select,textarea,label,.tabs,.egg-dlg,.emblem,#app"))return;
    const hit=el=>{if(!el)return false;const r=el.getBoundingClientRect();return e.clientX>=r.left-10&&e.clientX<=r.right+10&&e.clientY>=r.top-10&&e.clientY<=r.bottom+10};
    if(window.SKY&&!SKY.isNight()&&hit(document.querySelector(".pk-sun"))){e.stopImmediatePropagation();sunnyDay();return}
-   if(window.SKY&&SKY.isNight()&&fullMoon()&&hit(document.querySelector(".pk-moon"))){e.stopImmediatePropagation();moonShadow()}
+   if(window.SKY&&SKY.isNight()&&fullMoon()&&hit(document.querySelector(".pk-moon"))){e.stopImmediatePropagation();
+     // the shadow only passes once per full moon for each player
+     const cyc=Math.round((Date.now()/864e5-Date.UTC(2000,0,6,18,14)/864e5)/29.530588853-.5),seen=store.get("pokecatch:moonshadow");
+     if(seen===cyc&&!window.__fullMoon)return;store.set("pokecatch:moonshadow",cyc);moonShadow()}
  },true);
  window.__moonShadow=moonShadow;
 }
@@ -1346,6 +1349,11 @@ let after=null;const flush=()=>{const f=after;after=null;if(f)setTimeout(()=>SND
 D.caught=()=>{D.correct();flush()};
 D.brokeFree=()=>{D.wrong();flush()};
 
+// a made-up, mysterious cry for the shadow that crosses the full moon (not any real Pokémon's cry)
+D.moonCry=()=>{tone({f:520,slide:1040,type:"pulse",dur:.32,vol:.11,att:.04});tone({f:260,slide:520,type:"triangle",dur:.32,vol:.12,att:.04});
+  [0,1,2,3,4,5].forEach(k=>tone({t:.3+k*.07,f:1040-k*60,type:"pulse",dur:.09,vol:.09-k*.008,detune:k%2?25:-25}));
+  tone({t:.3,f:980,slide:330,type:"triangle",dur:.9,vol:.12,att:.02});tone({t:.3,f:490,slide:165,type:"sine",dur:1,vol:.08,att:.02});
+  [1.25,1.4,1.55].forEach((t,k)=>tone({t,n:96-k*5,type:"sine",dur:.25,vol:.035}));noise({t:.25,dur:.7,vol:.035,type:"bandpass",freq:2400,sweep:900,q:2})};
 D.flee=()=>{[0,.07,.14,.21].forEach((t,k)=>noise({t,dur:.04,vol:.18,type:"bandpass",freq:900+k*150,q:4}));[[.32,79],[.4,76],[.48,72],[.56,67]].forEach(([t,n])=>tone({t,n,type:"pulse",dur:.07,vol:.1}));noise({t:.3,dur:.35,vol:.08,type:"bandpass",freq:3000,sweep:600,q:1.5})};
 
 /* ---- music: a small step sequencer that plans a little ahead, and skips late notes rather than cramming them in ---- */
