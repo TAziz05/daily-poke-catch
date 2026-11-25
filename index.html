@@ -908,7 +908,7 @@ html{background:var(--sky-top) linear-gradient(180deg,var(--sky-top) 0%,var(--sk
 </script>
 
 <style>
-/* Easter eggs: rustling grass with wild encounters, shinies, a wishing moon, retro mode, and an evolving emblem. */
+/* Easter eggs: rustling grass with wild encounters, shinies, shooting stars by the moon, retro mode, and an evolving emblem. */
 .egg-mon{position:fixed;bottom:18px;z-index:990;width:46px;height:46px;cursor:pointer;appearance:none;border:0;padding:0;background:none;-webkit-tap-highlight-color:transparent}
 .egg-mon svg{width:100%;height:100%;image-rendering:pixelated;display:block}
 .egg-mon:focus-visible{outline:3px solid #ffcb05;outline-offset:3px;border-radius:6px}
@@ -998,7 +998,7 @@ const R=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matche
 const EGGS=[
  ["grass","Wild Encounter","Caught something hiding in the tall grass","Walk through the tall grass. Tap it."],
  ["shiny","Shiny Hunter","Spotted a shiny wild question","Some wild ones sparkle and come in gold. Very rare."],
- ["moon","Wishing Star","Made a wish on a shooting star","Look up at the night sky."],
+ ["moon","Stargazer","Spotted a shooting star","Look up at the night sky."],
  ["retro","Retro Mode","Switched to the old four-shade screen","An old cheat code, or hold the date for a couple of seconds."],
  ["evolve","Evolution","Watched the emblem evolve","Something in the header spins. Tap it until it changes."],
  ["owl","Night Owl","Finished the Daily Catch after midnight","Trainers who play after midnight see things others don't."],
@@ -1010,7 +1010,7 @@ const EGGS=[
  ["rain","Rain Dance","Made it rain","Tap the open sky like you're calling the weather."],
  ["cap","Lost and Found","Found a lost cap in the grass","Keep an eye on the grass during the day."],
  ["fireflies","Firefly Night","Woke up the fireflies","Little lights drift over the grass at night."],
- ["meteor","Stargazer","Caught three falling stars in a meteor shower","A few nights a year, the sky rains stars."],
+ ["meteor","Meteor Watcher","Caught three falling stars in a meteor shower","A few nights a year, the sky rains stars."],
  ["eclipse","Eclipse Chaser","Tapped the sun or moon during an eclipse","On a real eclipse day, tap whatever goes dark."],
  ["first","First Catch","Finished a Daily Catch sooner after midnight than anyone else","Be the quickest trainer after your own midnight. It's decided the next day."]];
 let queue=[];
@@ -1104,10 +1104,10 @@ document.addEventListener("click",e=>{
   if(e.clientY>innerHeight-96){rustle(e.clientX);if(!playing()&&(Math.random()<.35||!ACH.has("grass")&&Math.random()<.6))setTimeout(()=>encounter(e.clientX),250)}
 });
 
-/* 3. wishing star */
+/* 3. shooting star */
 function shootingStar(){window.SND&&SND.play("star");const s=document.createElement("div");s.className="egg-star";const y=20+Math.random()*innerHeight*.25;s.style.top=y+"px";s.style.left="-140px";document.body.appendChild(s);
   s.animate([{transform:"translate(0,0) rotate(12deg)",opacity:0},{opacity:1,offset:.15},{transform:`translate(${innerWidth+280}px,${innerWidth*.22}px) rotate(12deg)`,opacity:0}],{duration:R?10:1100,easing:"ease-in"}).onfinish=()=>s.remove();
-  setTimeout(()=>{say("Shooting star",`You made a wish under a ${document.querySelector(".pk-moon").dataset.phase||"bright"} moon. May every wild question stay in the ball today.`);secret("moon")},R?0:900)}
+  setTimeout(()=>{say("Stargazer",`You spotted a shooting star streaking past the ${document.querySelector(".pk-moon").dataset.phase||"bright"} moon.`);secret("moon")},R?0:900)}
 
 /* 4. retro mode: Konami code or hold the date */
 function retro(){const on=document.body.classList.toggle("pk-retro");window.SND&&(SND.retro(on),SND.play(on?"retro":"colour"));say("Retro mode",on?"The screen switched to four shades of green. Do it again to switch back.":"Colour is back on.");if(on)secret("retro")}
@@ -1255,7 +1255,7 @@ html.ev-solar-total .ev-dim{opacity:.5}html.ev-solar-annular .ev-dim{opacity:.18
       const ev=today(),night=window.SKY&&SKY.isNight();
       for(const st of document.querySelectorAll(".ev-meteor"))if(!st.dataset.got&&hit(st,44)){st.dataset.got=1;e.stopImmediatePropagation();
         window.SND&&SND.play("meteor");caught++;st.style.boxShadow="0 0 18px #fff,0 0 40px #ffe27a";
-        if(caught===3){C.say("Stargazer",`You caught three falling stars during the ${ev.shower||"meteor shower"}.`);C.secret("meteor")}return}
+        if(caught===3){C.say(C.meteorName||"Meteor Watcher",`You caught three falling stars during the ${ev.shower||"meteor shower"}.`);C.secret("meteor")}return}
       if(e.target.closest(C.skip))return;
       const lunar=night&&ev.lunar&&hit(document.querySelector(C.moon),12),solar=!night&&ev.solar&&hit(document.querySelector(C.sun).querySelector(".ev-disc"),20);
       if(lunar||solar){e.stopImmediatePropagation();window.SND&&SND.play("eclipse");

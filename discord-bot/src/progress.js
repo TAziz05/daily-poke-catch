@@ -13,7 +13,7 @@ export const GAME = {
 export const EGGS = [
   ["grass", "Wild Encounter", "Caught something hiding in the tall grass"],
   ["shiny", "Shiny Hunter", "Spotted a shiny wild question"],
-  ["moon", "Wishing Star", "Made a wish on a shooting star"],
+  ["moon", "Stargazer", "Spotted a shooting star"],
   ["retro", "Retro Mode", "Switched to the old four-shade screen"],
   ["evolve", "Evolution", "Watched the emblem evolve"],
   ["owl", "Night Owl", "Finished the Daily Catch after midnight"],
@@ -25,7 +25,7 @@ export const EGGS = [
   ["rain", "Rain Dance", "Made it rain"],
   ["cap", "Lost and Found", "Found a lost cap in the grass"],
   ["fireflies", "Firefly Night", "Woke up the fireflies"],
-  ["meteor", "Stargazer", "Caught three falling stars in a meteor shower"],
+  ["meteor", "Meteor Watcher", "Caught three falling stars in a meteor shower"],
   ["eclipse", "Eclipse Chaser", "Tapped the sun or moon during an eclipse"],
 ];
 

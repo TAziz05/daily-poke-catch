@@ -39,7 +39,7 @@ I acted as the product owner and fact-checker. Claude wrote the code and drafted
 - **A night route** with tall grass, twinkling stars and a moon that shows the real phase for tonight.
 - **Battle screens:** each question is a wild encounter. You throw a ball to answer, it wobbles, and the question is either caught or breaks free. The first question opens with a flash-and-wipe like the classic games.
 - **A logo** whose type-color ring spins while the question mark stays upright, plus retro pixel fonts and game-style dialog boxes with typing text.
-- **Five hidden secrets,** including wild questions that appear in the grass (sometimes shiny), a wishing star, a retro mode, and an emblem that evolves.
+- **Five hidden secrets,** including wild questions that appear in the grass (sometimes shiny), a shooting star by the moon, a retro mode, and an emblem that evolves.
 - **An Achievements tab** that keeps secrets hidden until you find them, with hints and counters.
 - **Little touches:** wild questions duck back into the grass instead of vanishing, none appear while you're in a game, and switching tabs mid-battle shows "Got away safely!"
 
