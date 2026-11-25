@@ -280,14 +280,16 @@ html.ev-solar-total .ev-dim{opacity:.5}html.ev-solar-annular .ev-dim{opacity:.18
 @keyframes evCurtain{0%{transform:skewX(-14deg) scaleY(.82) translateX(-4%);opacity:.55}50%{opacity:1}100%{transform:skewX(16deg) scaleY(1.05) translateX(6%);opacity:.7}}
 @keyframes evAwave{0%,100%{opacity:.25}20%{opacity:.9}45%{opacity:.5}70%{opacity:1}}
 @media (prefers-reduced-motion:reduce){.ev-aurora>b,.ev-aurora i{animation:none}}
-.ev-meteor{position:fixed;z-index:2;width:170px;height:4px;border-radius:2px;pointer-events:none;background:linear-gradient(90deg,transparent,#fff 75%,#e6f0ff);box-shadow:0 0 10px #fff,0 0 20px #9cc8ff}`;
+.ev-meteors{position:absolute;left:0;right:0;top:0;overflow:hidden;pointer-events:none;-webkit-mask-image:linear-gradient(#000 78%,transparent);mask-image:linear-gradient(#000 78%,transparent)}
+.ev-meteors .ev-meteor{position:absolute}
+.ev-meteor{position:fixed;z-index:-1;width:170px;height:4px;border-radius:2px;pointer-events:none;background:linear-gradient(90deg,transparent,#fff 75%,#e6f0ff);box-shadow:0 0 10px #fff,0 0 20px #9cc8ff}`;
     document.head.appendChild(css);
     const m=document.querySelector(C.moon),s=document.querySelector(C.sun),sky=document.querySelector(C.sky);
     if(m&&!m.querySelector(".ev-shade"))m.insertAdjacentHTML("beforeend",'<i class="ev-shade"></i>');
     if(s&&!s.querySelector(".ev-disc"))s.insertAdjacentHTML("beforeend",'<i class="ev-disc"></i>');
     if(sky&&!sky.querySelector(".ev-dim")){const d=document.createElement("div");d.className="ev-dim";sky.appendChild(d)}
     // the northern lights shimmer across the night sky, coming and going in slow waves
-    if(sky&&!sky.querySelector(".ev-aurora")){const a=document.createElement("div");a.className="ev-aurora";
+    if(sky&&C.aurora!=="none"&&!sky.querySelector(".ev-aurora")){const a=document.createElement("div");a.className="ev-aurora";
       a.innerHTML="<b>"+[[2,16,17,0],[14,22,23,-6],[30,14,19,-11],[42,24,27,-3],[60,16,21,-15],[72,22,25,-8],[86,14,18,-2]].map(([l,w,d,dl])=>`<i style="--l:${l}%;--w:${w}%;--d:${d}s;--dl:${dl}s"></i>`).join("")+"</b>";
       sky.prepend(a)}
     apply();setInterval(apply,60000);
@@ -315,8 +317,11 @@ html.ev-solar-total .ev-dim{opacity:.5}html.ev-solar-annular .ev-dim{opacity:.18
     window.SND&&SND.refresh&&SND.refresh();
     clearTimeout(meteorT);if(night&&ev.shower)meteorT=setTimeout(meteor,2000+Math.random()*5000)}
   function meteor(){if(document.visibilityState==="visible"&&!R){const s=document.createElement("div");s.className="ev-meteor";
-      const x=Math.random()*innerWidth*.8,y=10+Math.random()*innerHeight*.3,a=18+Math.random()*22;s.style.left=x+"px";s.style.top=y+"px";document.body.appendChild(s);
-      const dx=200+Math.random()*140;s.animate([{transform:`translate(0,0) rotate(${a}deg)`,opacity:0},{opacity:1,offset:.15},{transform:`translate(${dx}px,${dx*Math.tan(a*Math.PI/180)}px) rotate(${a}deg)`,opacity:0}],{duration:2800,easing:"cubic-bezier(.3,0,.7,1)"}).onfinish=()=>s.remove()}
+      // a long run across the sky behind the page's cards, quick but catchable once it comes out from behind them
+      const x=-60+Math.random()*innerWidth*.35,y=4+Math.random()*innerHeight*.28,a=14+Math.random()*16;s.style.left=x+"px";s.style.top=y+"px";const sky=C.sky&&document.querySelector(C.sky),bh=sky&&C.behind&&sky.querySelector(C.behind);
+      let box=sky&&sky.querySelector(".ev-meteors");if(sky&&!box){box=document.createElement("div");box.className="ev-meteors";bh?bh.before(box):sky.appendChild(box)}
+      if(box){const hz=C.horizon&&document.querySelector(C.horizon),hr=hz&&hz.getBoundingClientRect();box.style.height=(hr&&hr.height?hr.top+hr.height*.45:innerHeight*.7)+"px";box.appendChild(s)}else document.body.appendChild(s);
+      const dx=Math.max(520,innerWidth*.75)+Math.random()*200,ms=innerWidth<700?5:3;/* phones keep the slower speed: less open sky to catch them in */s.animate([{transform:`translate(0,0) rotate(${a}deg)`,opacity:0},{opacity:1,offset:.06},{opacity:1,offset:.9},{transform:`translate(${dx}px,${dx*Math.tan(a*Math.PI/180)}px) rotate(${a}deg)`,opacity:0}],{duration:dx*ms,easing:"linear"}).onfinish=()=>s.remove()}
     const ev=today();if((!window.SKY||SKY.isNight())&&ev.shower)meteorT=setTimeout(meteor,3000+Math.random()*7000)}
   return {today,init,apply,meteor};
 })();
@@ -334,7 +339,7 @@ YS.checkFirst=async function(onWin){
 };
 /* Poké Catch: sky events, the first-of-the-day award, and five new secrets out in the field:
    a berry bush, a flock of birds, a rain dance, a lost cap, and fireflies. All made up and generic. */
-{EV.init({moon:".pk-moon",sun:".pk-sun",sky:".pk-night",disc:58,skip:"button,a,input,select,textarea,label,.panel,.tabs,.egg-dlg,.emblem,#date",
+{EV.init({moon:".pk-moon",sun:".pk-sun",sky:".pk-night",behind:".pk-grass.b",horizon:".pk-grass.b",aurora:"none",disc:58,skip:"button,a,input,select,textarea,label,.panel,.tabs,.egg-dlg,.emblem,#date",
   say:(t,m)=>say(t,m),secret:id=>secret(id)});
  const prettyDay=d=>new Date(d+"T12:00:00").toLocaleDateString(undefined,{month:"long",day:"numeric"});
  setTimeout(()=>YS.checkFirst(d=>{say("First Catch",`You finished the ${prettyDay(d)} Daily Catch sooner after your midnight than any other trainer did after theirs.`);secret("first")}),4000);
@@ -348,6 +353,10 @@ YS.checkFirst=async function(onWin){
 .pk-birds{position:fixed;z-index:1;left:-160px;width:140px;height:70px;border:0;padding:0;background:none;cursor:pointer}
 .pk-bird{position:fixed;z-index:2;width:26px;height:14px;pointer-events:none}
 .pk-bird svg{width:100%;height:100%;display:block}
+.pk-birds .wu,.pk-bird .wu{animation:pkFlapU var(--fs,.36s) steps(1) infinite;animation-delay:var(--fd,0s)}
+.pk-birds .wd,.pk-bird .wd{animation:pkFlapD var(--fs,.36s) steps(1) infinite;animation-delay:var(--fd,0s)}
+.pk-bird{--fs:.18s}
+@keyframes pkFlapU{0%{opacity:1}50%{opacity:0}}@keyframes pkFlapD{0%{opacity:0}50%{opacity:1}}
 .pk-rain{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:0;transition:opacity 1.5s;background:repeating-linear-gradient(105deg,transparent 0 22px,rgba(190,215,255,.55) 22px 24px,transparent 24px 46px);background-size:46px 46px;animation:pkRain .35s linear infinite}
 .pk-rain.on{opacity:1}
 .pk-overcast{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity 2.5s;
@@ -360,9 +369,10 @@ html:not([data-sky=night]) .pk-overcast{--hx:var(--sun-x);--hy:var(--sun-y)}
 .pk-overcast.night{filter:brightness(.4)}
 @keyframes pkRain{to{background-position:-12px 46px}}
 body.pk-rainy .pk-night{filter:brightness(.82) saturate(.8)}
-.pk-rainbow{position:fixed;z-index:-1;left:50%;bottom:40px;width:min(900px,120vw);height:min(450px,60vw);margin-left:calc(min(900px,120vw)/-2);border-radius:50% 50% 0 0/100% 100% 0 0;pointer-events:none;opacity:0;transition:opacity 2s;
-  background:radial-gradient(circle at 50% 100%,transparent 0 55%,rgba(148,0,211,.4) 55% 58%,rgba(75,0,130,.4) 58% 61%,rgba(0,0,255,.4) 61% 64%,rgba(0,200,0,.4) 64% 67%,rgba(255,255,0,.45) 67% 70%,rgba(255,127,0,.45) 70% 73%,rgba(255,0,0,.45) 73% 76%,transparent 76%)}
+.pk-rainbow{position:fixed;z-index:-1;left:50%;bottom:40px;width:900px;height:450px;margin-left:-450px;pointer-events:none;opacity:0;transition:opacity 2s;transform-origin:50% 100%;
+  background:radial-gradient(circle 440px at 50% 100%,transparent 0 64%,rgba(140,60,220,.42) 64% 68%,rgba(70,90,235,.45) 68% 72%,rgba(40,190,90,.5) 72% 76%,rgba(255,235,40,.55) 76% 80%,rgba(255,140,20,.6) 80% 84%,rgba(240,40,40,.62) 84% 88%,transparent 88%)}
 .pk-rainbow.on{opacity:1}
+@media (max-width:760px){.pk-rainbow{scale:.5}}
 .pk-cap{position:fixed;z-index:-1;bottom:30px;width:44px;height:28px;pointer-events:none;transform:translateY(22px);opacity:0;transition:transform .6s,opacity .6s}
 .pk-cap.peek{transform:translateY(0);opacity:1}
 .pk-fly{position:fixed;z-index:-1;width:6px;height:6px;border-radius:50%;background:#f6ff9a;box-shadow:0 0 8px 3px rgba(240,255,120,.75);pointer-events:none;animation:pkFly 3s ease-in-out infinite alternate}
@@ -377,15 +387,16 @@ body.pk-rainy .pk-night{filter:brightness(.82) saturate(.8)}
  (function bushLoop(first){setTimeout(()=>{if(Math.random()<(first?.35:.25))growBush();bushLoop()},first?20000+Math.random()*40000:240000+Math.random()*120000)})(true);
  window.__bush=growBush;
  // a flock of birds now and then by day
- const birdPath='<path d="M0 6Q5 0 11 6Q17 0 22 6Q17 3 11 8Q5 3 0 6Z" fill="#1d2a4d"/>';
+ // two wing positions that swap back and forth, so the birds flap as they fly
+ const birdPath=(d=0)=>`<g style="--fd:${d}s"><path class="wu" d="M0 6Q5 0 11 6Q17 0 22 6Q17 3 11 8Q5 3 0 6Z" fill="#1d2a4d"/><path class="wd" d="M0 8Q5 11 11 7Q17 11 22 8Q17 9 11 9.5Q5 9 0 8Z" fill="#1d2a4d"/></g>`;
  let flock=null;
  function birds(){if(flock||(window.SKY&&SKY.isNight())||document.visibilityState!=="visible")return;
    const b=document.createElement("button");b.className="pk-birds";b.setAttribute("aria-label","A flock of birds");flock=b;b.style.top=8+Math.random()*16+"vh";
-   b.innerHTML=`<svg viewBox="0 0 140 70">${[[0,30],[24,20],[48,10],[24,42],[48,52]].map(([x,y])=>`<g transform="translate(${x+40} ${y})">${birdPath}</g>`).join("")}</svg>`;
+   b.innerHTML=`<svg viewBox="0 0 140 70">${[[0,30],[24,20],[48,10],[24,42],[48,52]].map(([x,y],k)=>`<g transform="translate(${x+40} ${y})">${birdPath(-k*.11)}</g>`).join("")}</svg>`;
    document.body.appendChild(b);const fly=b.animate([{transform:"translate(0,0)"},{transform:`translate(${innerWidth+320}px,-30px)`}],{duration:R?10:20000,easing:"linear"});
    fly.onfinish=()=>{b.remove();flock=null};
    b.onclick=()=>{if(b.dataset.hit)return;b.dataset.hit=1;const r=b.getBoundingClientRect();fly.cancel();b.remove();flock=null;window.SND&&SND.play("flap");
-     for(let k=0;k<5;k++){const s=document.createElement("div");s.className="pk-bird";s.innerHTML=`<svg viewBox="0 0 22 12">${birdPath}</svg>`;s.style.left=r.left+r.width*(.3+.12*k)+"px";s.style.top=r.top+r.height*(.25+.12*(k%3))+"px";document.body.appendChild(s);
+     for(let k=0;k<5;k++){const s=document.createElement("div");s.className="pk-bird";s.innerHTML=`<svg viewBox="0 0 22 12">${birdPath(-k*.07)}</svg>`;s.style.setProperty("--fs",".18s");s.style.left=r.left+r.width*(.3+.12*k)+"px";s.style.top=r.top+r.height*(.25+.12*(k%3))+"px";document.body.appendChild(s);
        const a=-Math.PI*(.1+.8*k/4),d=300+Math.random()*200;s.animate([{transform:"translate(0,0) scale(1)"},{transform:`translate(${Math.cos(a)*d}px,${Math.sin(a)*d}px) scale(.6)`,opacity:0}],{duration:R?10:1800,easing:"ease-out"}).onfinish=()=>s.remove()}
      say("Bird Watcher","You startled a flock of birds. They scattered in every direction.");secret("birds")}}
  (function loop(){setTimeout(()=>{if(Math.random()<.35&&!playing())birds();loop()},60000+Math.random()*60000)})();
@@ -397,9 +408,10 @@ body.pk-rainy .pk-night{filter:brightness(.82) saturate(.8)}
  const over=document.createElement("div");over.className="pk-overcast";document.querySelector(".pk-night").appendChild(over);
  function rainDance(){raining=true;const night=window.SKY&&SKY.isNight();document.body.classList.remove("pk-sunny");
    over.classList.toggle("night",!!night);over.style.setProperty("--hx",night?"var(--moon-x)":"var(--sun-x)");over.style.setProperty("--hy",night?"var(--moon-y)":"var(--sun-y)");over.classList.add("on");
+   window.__raining=true;window.SND&&SND.refresh&&SND.refresh();
    setTimeout(()=>{document.body.classList.add("pk-rainy");rain.classList.add("on");window.SND&&SND.play("rain")},R?0:1800);
    say("Rain Dance",night?"Clouds rolled in and it started to rain. The moon is peeking through.":"Clouds rolled in and it started to rain!");secret("rain");
-   setTimeout(()=>{rain.classList.remove("on");document.body.classList.remove("pk-rainy");over.classList.remove("on");
+   setTimeout(()=>{rain.classList.remove("on");document.body.classList.remove("pk-rainy");over.classList.remove("on");window.__raining=false;window.SND&&SND.refresh&&SND.refresh();
      // a rainbow only comes out in the daytime
      if(window.SKY&&!SKY.isNight()){setTimeout(()=>{bow.classList.add("on");window.SND&&SND.play("star")},R?0:2000);setTimeout(()=>{bow.classList.remove("on");raining=false},R?100:16000)}
      else setTimeout(()=>raining=false,3000)},R?100:22000)}
@@ -426,7 +438,7 @@ body.pk-rainy .pk-night{filter:brightness(.82) saturate(.8)}
      if(shakes%3===0){const r=bush.getBoundingClientRect();window.SND&&SND.play("berry");
        for(let k=0;k<4;k++){const b=document.createElement("i");b.className="pk-berry";b.style.left=r.left+14+k*16+"px";b.style.top=r.top+18+"px";document.body.appendChild(b);
          b.animate([{transform:"translate(0,0)"},{transform:`translate(${(k-1.5)*18}px,${r.height-10}px)`,offset:.6},{transform:`translate(${(k-1.5)*26}px,${r.height-18}px)`,offset:.8},{transform:`translate(${(k-1.5)*30}px,${r.height-10}px)`,opacity:0}],{duration:R?10:1500,easing:"ease-in"}).onfinish=()=>b.remove()}
-       say("Berry Picker","A few berries fell out of the bush. Any wild question would love one.");secret("berries")}return}
+       say("Berry Picker","A few berries fell out of the bush. Any wild question would love one.");secret("berries");setTimeout(()=>bush.classList.remove("on"),1600)}return}
    if(cap.classList.contains("peek")&&hit(cap,10)){e.stopImmediatePropagation();cap.classList.remove("peek");window.SND&&SND.play("cap");
      const c=cap.cloneNode(true);c.classList.add("peek");document.body.appendChild(c);
      c.animate([{transform:"translateY(0) rotate(0)"},{transform:"translateY(-160px) rotate(720deg)",offset:.6},{transform:"translateY(-120px) rotate(720deg)",opacity:0}],{duration:R?10:1200,easing:"ease-out"}).onfinish=()=>c.remove();

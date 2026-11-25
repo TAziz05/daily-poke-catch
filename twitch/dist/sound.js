@@ -155,6 +155,15 @@ D.moonCry=()=>{
   tone({t:.98,f:1240,slide:300,type:"square",dur:.9,vol:.035,cut:3500});
   noise({t:.98,dur:1.2,vol:.1,type:"bandpass",freq:1600,sweep:300,q:2});
   tone({t:.95,f:55,slide:32,type:"sine",dur:1.8,vol:.3,att:.02});noise({t:.95,dur:.5,vol:.18,type:"lowpass",freq:180})};
+// sky events
+D.meteor=()=>{[0,.05,.1,.15,.2].forEach((t,k)=>tone({t,n:96-k*2,type:"triangle",dur:.12,vol:.07-k*.01}));noise({dur:.35,vol:.05,type:"highpass",freq:5000})};
+D.eclipse=()=>{tone({f:110,slide:82,type:"triangle",dur:2.2,vol:.16,att:.6});tone({f:165,slide:123,type:"sine",dur:2.2,vol:.1,att:.8});[0,.5,1,1.5].forEach((t,k)=>tone({t:.3+t,n:84-k*3,type:"sine",dur:.6,vol:.05}))};
+// out in the field
+D.flap=()=>{for(let k=0;k<10;k++)noise({t:k*.05,dur:.035,vol:.16-k*.012,type:"bandpass",freq:1400+Math.random()*600,q:2})};
+D.rain=()=>{noise({dur:3,vol:.12,type:"highpass",freq:3500,att:.8});[0,.3,.7,1.1,1.6].forEach(t=>tone({t,n:88+(Math.random()*6|0),type:"sine",dur:.08,vol:.04}))};
+D.berry=()=>{[0,.12,.22,.3].forEach((t,k)=>tone({t,n:76-k*2,type:"pulse12",dur:.06,vol:.08}))};
+D.cap=()=>{[72,76,79,84].forEach((n,k)=>tone({t:k*.07,n,type:"pulse",dur:.08,vol:.08}))};
+D.fireflies=()=>{for(let k=0;k<12;k++)tone({t:k*.09,n:84+[0,4,7,11,12,16][k%6],type:"sine",dur:.3,vol:.05})};
 D.flee=()=>{[0,.07,.14,.21].forEach((t,k)=>noise({t,dur:.04,vol:.18,type:"bandpass",freq:900+k*150,q:4}));[[.32,79],[.4,76],[.48,72],[.56,67]].forEach(([t,n])=>tone({t,n,type:"pulse",dur:.07,vol:.1}));noise({t:.3,dur:.35,vol:.08,type:"bandpass",freq:3000,sweep:600,q:1.5})};
 
 /* ---- music: a small step sequencer that plans a little ahead, and skips late notes rather than cramming them in ---- */
@@ -199,31 +208,36 @@ const SONGS={
    const tri=[[65,69,72],[62,65,69],[62,65,70],[64,67,72]][bar];if(s%4===2)tri.forEach(n=>tone({t,n,type:"pulse12",dur:.12,vol:.02,bus:musBus}));
    if(s%2===0)noise({t,dur:.02,vol:.025,freq:9000,bus:musBus});
  }},
- mEclipse:{bpm:66,steps:64,play(i,t){ // eclipse: slow and uneasy in D minor, a low drone, a ticking pulse and a falling bell line
-   const bar=Math.floor(i/16),s=i%16;const ch=[[50,53,57],[46,50,53],[43,46,50],[45,49,52]][bar];
-   if(s===0){tone({t,n:ch[0]-24,type:"sawtooth",dur:3.4,vol:.07,att:.6,cut:420,bus:musBus});ch.forEach((n,k)=>tone({t,n:n+12,type:"sawtooth",dur:3.2,vol:.018,att:.9,cut:900,detune:k*4-4,bus:musBus}))}
-   if(s===0||s===3)tone({t,f:70,slide:40,type:"sine",dur:.35,vol:s?.2:.32,bus:musBus});
-   if(s%4===2)tone({t,n:86,type:"sine",dur:.05,vol:.02,bus:musBus});
-   const bell={0:74,6:73,8:72,12:69}[s];if(bell&&(bar%2===0||s>4))tone({t,n:bell-(bar===3?2:0),type:"sine",dur:1.6,vol:.045,att:.004,bus:musBus});
-   if(s===8&&bar%2)noise({t,dur:1.4,vol:.03,type:"bandpass",freq:600,sweep:2400,q:4,bus:musBus});
+ mEclipse:{bpm:72,steps:64,play(i,t){ // Poké eclipse: an eerie chiptune in C minor, a slow pulse lead, a tritone arpeggio and a ticking clock
+   const bar=Math.floor(i/16),s=i%16;const root=[36,32,34,31][bar];
+   if(s%4===0)tone({t,n:root+(s===8?6:0),type:"triangle",dur:.6,vol:.2,bus:musBus});
+   if(s%2===0){const ar=[0,3,6,3][s/2%4];tone({t,n:root+24+ar,type:"pulse12",dur:.12,vol:.03,bus:musBus})}
+   const lead={0:72,6:71,8:68,12:66}[s];if(lead&&bar!==2)tone({t,n:lead-(bar===3?1:0),type:"pulse",dur:.9,vol:.045,cut:2200,bus:musBus});
+   if(s%4===2)noise({t,dur:.02,vol:.035,type:"highpass",freq:7000,bus:musBus});
+   if(s===0&&bar===3)noise({t,dur:1.2,vol:.04,type:"bandpass",freq:400,sweep:1600,q:5,bus:musBus});
  }},
- mBlood:{bpm:88,steps:64,play(i,t){ // blood moon: a driving, menacing E phrygian ostinato with heavy hits and clashing high stabs
-   const bar=Math.floor(i/16),s=i%16;const root=[40,41,40,43][bar];
-   if(s%2===0)tone({t,n:root+(s%8===6?1:0),type:"sawtooth",dur:.2,vol:.1,cut:650,bus:musBus});
-   if(s%2===0)tone({t,n:root-12,type:"square",dur:.18,vol:.05,cut:300,bus:musBus});
-   if(s===0||s===10)tone({t,f:90,slide:36,type:"sine",dur:.5,vol:.36,bus:musBus});
-   if(s===4||s===12)noise({t,dur:.18,vol:.14,type:"bandpass",freq:700,q:1.2,bus:musBus});
-   if(s===14&&bar===3)[0,1,2].forEach(k=>tone({t:t+k*.07,f:180-k*30,slide:70,type:"triangle",dur:.12,vol:.18,bus:musBus}));
-   if(s===0&&bar%2===1)[76,77].forEach(n=>tone({t,n,type:"square",dur:.6,vol:.025,cut:2500,bus:musBus}));
-   if(s===8)[64,65,71].forEach(n=>tone({t,n,type:"sawtooth",dur:.9,vol:.016,att:.2,cut:1600,bus:musBus}));
-   if(s%4===3)noise({t,dur:.02,vol:.03,freq:9000,bus:musBus});
+ mBlood:{bpm:104,steps:64,play(i,t){ // Poké blood moon: a frantic 8-bit battle loop in E phrygian with a pounding square bass and a shrieking arpeggio
+   const bar=Math.floor(i/16),s=i%16;const root=[40,41,40,38][bar];
+   tone({t,n:root+([0,0,12,0,1,0,12,0][s%8]),type:"square",dur:.1,vol:.06,cut:1400,bus:musBus});
+   if(s%4===0)tone({t,f:130,slide:45,type:"triangle",dur:.12,vol:.3,bus:musBus});
+   if(s===4||s===12)noise({t,dur:.1,vol:.13,type:"bandpass",freq:1800,q:.8,bus:musBus});
+   if(s%2===1)noise({t,dur:.02,vol:.04,freq:9000,bus:musBus});
+   if(bar%2===1&&s>=8){const ar=[0,1,4,7,10,7,4,1][s-8];tone({t,n:76+ar,type:"pulse12",dur:.08,vol:.035,bus:musBus})}
+   if(s===0&&bar%2===0)[64,70].forEach(n=>tone({t,n,type:"pulse",dur:1.1,vol:.03,cut:2600,bus:musBus}));
  }},
- mCalm:{bpm:70,steps:64,play(i,t){ // calm moon: soft sine chords, a slow music-box line and a gentle brush, no drums
-   const bar=Math.floor(i/16),s=i%16;const ch=[[48,52,55,59],[45,48,52,55],[41,45,48,52],[43,47,50,55]][bar];
-   if(s===0)ch.forEach((n,k)=>tone({t:t+k*.04,n:n+12,type:"sine",dur:3,vol:.035,att:.3,bus:musBus}));
-   if(s===0||s===8)tone({t,n:ch[0]-12,type:"sine",dur:1.8,vol:.16,att:.05,bus:musBus});
-   const box=[[0,76],[3,79],[6,83],[10,79],[13,76]];box.forEach(([q,n])=>{if(q===s)tone({t,n:n-(bar===2?2:0),type:"sine",dur:1,vol:.04,att:.003,bus:musBus})});
-   if(s===8)noise({t,dur:.5,vol:.02,type:"bandpass",freq:3500,q:.8,bus:musBus});
+ mCalm:{bpm:64,steps:64,play(i,t){ // Poké calm moon: a soft 8-bit lullaby in G, triangle arpeggios and a quiet pulse melody, no drums
+   const bar=Math.floor(i/16),s=i%16;const ch=[[55,59,62],[52,55,59],[48,52,55],[50,54,57]][bar];
+   if(s%2===0)tone({t,n:ch[(s/2)%3]+12,type:"triangle",dur:.5,vol:.07,bus:musBus});
+   if(s===0||s===8)tone({t,n:ch[0]-12,type:"triangle",dur:1.2,vol:.14,bus:musBus});
+   const mel={0:79,4:78,6:76,10:74,12:71}[s];if(mel&&bar!==3)tone({t,n:mel-(bar===2?2:0),type:"pulse12",dur:.7,vol:.03,cut:2600,bus:musBus});
+ }},
+ mRain:{bpm:76,steps:64,play(i,t){ // rain: a soft, wistful chiptune in A minor with plinking raindrops and a gentle pulse
+   const bar=Math.floor(i/16),s=i%16;const ch=[[57,60,64],[53,57,60],[48,52,55],[55,59,62]][bar];
+   if(s===0)ch.forEach(n=>tone({t,n,type:"triangle",dur:2.8,vol:.03,att:.4,bus:musBus}));
+   if(s%4===0)tone({t,n:ch[0]-12+(s===8?7:0),type:"triangle",dur:.5,vol:.13,bus:musBus});
+   const mel=[[0,76],[4,74],[6,72],[10,71],[12,69]];if(bar!==3)mel.forEach(([q,n])=>{if(q===s)tone({t,n:n-(bar===1?2:0),type:"pulse",dur:.45,vol:.035,cut:2400,bus:musBus})});
+   if(Math.random()<.22)tone({t:t+Math.random()*.1,n:[84,88,91,93,96][Math.random()*5|0],type:"sine",dur:.12,vol:.025,att:.002,bus:musBus});
+   if(s%2===1)noise({t,dur:.06,vol:.018,type:"highpass",freq:6500,bus:musBus});
  }}
 };
 let want="lobby",cur=null,timer=null,step=0,nextT=0,src=null;
@@ -248,7 +262,7 @@ function startSong(k){
   if(f&&b){src=A.createBufferSource();src.buffer=b;src.loop=true;src.loopStart=f.pad;src.loopEnd=f.pad+f.L;const g=A.createGain();g.gain.value=f.gain;src.connect(g);g.connect(musBus);src.start(A.currentTime+.03,f.pad);return}
   load(k);step=0;nextT=A.currentTime+.12;timer=setInterval(schedule,90)}
 // sky events change the menu and summary music: something darker during an eclipse, scarier for a blood moon, calmer for a super or blue moon
-function moodSong(w){if(w!=="lobby"&&w!=="endless")return null;const e=window.EV&&EV.today&&EV.today();if(!e)return null;const n=window.SKY?SKY.isNight():false;
+function moodSong(w){if(w!=="lobby"&&w!=="endless")return null;if(window.__raining&&SONGS.mRain)return "mRain";const e=window.EV&&EV.today&&EV.today();if(!e)return null;const n=window.SKY?SKY.isNight():false;
   if(!n&&e.solar)return "mEclipse";if(n&&e.lunar==="total")return "mBlood";if(n&&e.lunar)return "mEclipse";if(n&&(e.supermoon||e.blue))return "mCalm";return null}
 function applyMusic(){const k=st.mu&&A&&A.state==="running"&&!document.hidden&&Date.now()>=holdUntil?(moodSong(want)||G.songs[want]||null):null;if(k!==cur)startSong(k)}
 SND.refresh=()=>{if(A)applyMusic()};setInterval(()=>{if(A&&st.mu)applyMusic()},30000);
