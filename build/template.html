@@ -581,6 +581,12 @@ h1{animation:pkBounce .8s cubic-bezier(.2,1.6,.4,1) both}
 .pk-skip.in-battle{bottom:auto;top:8px}
 @keyframes pkSkip{50%{opacity:.55}}
 .pk-field.night{background:linear-gradient(180deg,#30407c 0%,#4b5fa8 45%,#3f7d4b 46%,#2f6a3c 100%)}
+/* the battle field follows the real sky: its sky part uses the same colors as the page's sky (dawn, day, dusk or night), lightened a little
+   in daylight, and the grass darkens as night falls */
+.pk-field,.pk-field.night{background:linear-gradient(180deg,color-mix(in srgb,var(--sky-top,#9fd3ff),#fff calc((1 - var(--night,0))*30%)) 0%,
+  color-mix(in srgb,var(--sky-bot,#e6f6ff),#fff calc((1 - var(--night,0))*35%)) 45%,
+  color-mix(in srgb,#3f7d4b calc(var(--night,0)*100%),#b6e39c) 46%,color-mix(in srgb,#2f6a3c calc(var(--night,0)*100%),#8fd172) 100%)}
+.pk-field .pk-plat{filter:brightness(calc(1 - .42*var(--night,0))) saturate(calc(1 - .2*var(--night,0)))}
 .pk-plat{position:absolute;border-radius:50%;background:radial-gradient(ellipse at 50% 40%,#d9f0b8 0 45%,#a7d47f 46% 70%,#7fb35c 71%);box-shadow:0 4px 0 rgba(0,0,0,.12)}
 .pk-plat.e{right:5%;top:96px;width:42%;max-width:190px;height:34px}
 .pk-plat.p{left:-4%;bottom:-10px;width:52%;max-width:240px;height:46px}
