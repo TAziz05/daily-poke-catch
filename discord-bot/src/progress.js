@@ -42,6 +42,12 @@ export const MILES = [
   ["s25", "Unstoppable", "Reach a 25-question streak in Endless", s => [s.best, 25]],
   ["w7", "Steady Trainer", "Play the Daily Catch 7 days in a row", s => [s.streak, 7]],
   ["w30", "Dedicated Trainer", "Play the Daily Catch 30 days in a row", s => [s.streak, 30]],
+  ["dex100", "Rookie Researcher", "Catch 100 different Pokémon", s => [s.caught || 0, 100]],
+  ["dex500", "Field Researcher", "Catch 500 different Pokémon", s => [s.caught || 0, 500]],
+  ["region", "Regional Researcher", "Catch every Pokémon from one region", s => [s.regionDone || 0, 1]],
+  ["regionm", "Regional Master", "Master every Pokémon from one region", s => [s.regionMaster || 0, 1]],
+  ["badges", "Full Badge Case", "Earn all 8 badges", s => [s.badges || 0, 8]],
+  ["dexall", "Gotta Catch 'Em All", "Catch every Pokémon in the Pokédex", s => [s.caught || 0, s.total || 1025]],
   ["hunter", "Secret Hunter", "Find every secret", s => [s.secrets, EGGS.length]],
 ];
 
@@ -94,6 +100,7 @@ export function statsFrom(keys, tierOf = () => null) {
     perfectDay: list.some(d => SETS.every(k => perfect(d[k]))) ? 1 : 0,
     topRight, best: endless.best || 0,
     streak: (() => { const ds = Object.keys(days).filter(d => days[d].main).sort(); let b = 0, r = 0; ds.forEach((d, i) => { r = i && Math.round((Date.parse(d) - Date.parse(ds[i - 1])) / 864e5) === 1 ? r + 1 : 1; b = Math.max(b, r); }); return b; })(),
+    ...parse(keys?.[GAME.prefix + ":collsum"], {}),
     secrets: Array.isArray(secrets) ? secrets.filter(id => EGGS.some(e => e[0] === id)).length : 0,
   };
 }

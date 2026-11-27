@@ -164,6 +164,11 @@ D.rain=()=>{noise({dur:3,vol:.12,type:"highpass",freq:3500,att:.8});[0,.3,.7,1.1
 D.berry=()=>{[0,.12,.22,.3].forEach((t,k)=>tone({t,n:76-k*2,type:"pulse12",dur:.06,vol:.08}))};
 D.cap=()=>{[72,76,79,84].forEach((n,k)=>tone({t:k*.07,n,type:"pulse",dur:.08,vol:.08}))};
 D.fireflies=()=>{for(let k=0;k<12;k++)tone({t:k*.09,n:84+[0,4,7,11,12,16][k%6],type:"sine",dur:.3,vol:.05})};
+// collection: the Pokédex and Badge Case
+D.dexNew=()=>{[[72,0],[76,.08],[79,.16],[84,.26]].forEach(([n,t])=>tone({t,n,type:"pulse",dur:.1,vol:.08}));tone({t:.26,n:88,type:"pulse12",dur:.3,vol:.06});tone({t:0,n:48,type:"triangle",dur:.4,vol:.12})};
+D.dexSeen=()=>{tone({n:76,type:"pulse12",dur:.06,vol:.05});tone({t:.07,n:71,type:"pulse12",dur:.08,vol:.04})};
+D.dexMaster=()=>{[79,83,86,91,95,98].forEach((n,k)=>tone({t:k*.06,n,type:"pulse",dur:.12,vol:.07}));tone({t:.36,n:103,type:"triangle",dur:.5,vol:.05})};
+D.badge=()=>{[[67,0,.14],[67,.15,.08],[67,.24,.08],[72,.33,.5]].forEach(([n,t,d])=>{tone({t,n,type:"pulse",dur:d,vol:.08});tone({t,n:n-12,type:"triangle",dur:d,vol:.12})});[76,79].forEach(n=>tone({t:.33,n,type:"pulse12",dur:.5,vol:.05}))};
 D.flee=()=>{[0,.07,.14,.21].forEach((t,k)=>noise({t,dur:.04,vol:.18,type:"bandpass",freq:900+k*150,q:4}));[[.32,79],[.4,76],[.48,72],[.56,67]].forEach(([t,n])=>tone({t,n,type:"pulse",dur:.07,vol:.1}));noise({t:.3,dur:.35,vol:.08,type:"bandpass",freq:3000,sweep:600,q:1.5})};
 
 /* ---- music: a small step sequencer that plans a little ahead, and skips late notes rather than cramming them in ---- */

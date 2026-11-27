@@ -6,7 +6,11 @@ P=[('https://bulbapedia.bulbagarden.net/wiki/','b:'),('https://www.pokemon.com/u
 for q in D['questions']:
   for full,short in P:
     if q['s'].startswith(full): q['s']=short+q['s'][len(full):];break
+  # keep which Pokémon a question is about (as "n"), for the player's Pokédex
+  if q.get('mon'): q['n']=q['mon']
   q.pop('f',None);q.pop('mon',None)
+# a compact Pokédex for the collection: [name, category, types, generation] by National Dex number
+D['dex']=[[p['name'],p['genus'],'/'.join(p['types']),p['gen']] for p in sorted(json.load(open(R+'ref/pokedex.json')),key=lambda p:p['id'])]
 d=json.dumps(D,ensure_ascii=False,separators=(',',':')).replace('</','<\\/')
 t=open(R+'template.html').read()
 V=json.load(open(R+'versions.json'))

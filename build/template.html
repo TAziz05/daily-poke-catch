@@ -951,7 +951,7 @@ function makeAch(C){
     return {days:list.length,mains:list.filter(d=>d.main).length,
       perfectMain:list.some(d=>perfect(d.main))?1:0,fullDay:list.some(d=>SETS.every(k=>d[k]))?1:0,perfectDay:list.some(d=>SETS.every(k=>perfect(d[k])))?1:0,
       topRight:sets.reduce((a,v)=>a+(v.ids||[]).filter((id,i)=>v.marks[i]&&QBYID[id]&&QBYID[id].t==="x").length,0),
-      best:eStats().best,secrets:found.size,streak:(()=>{const ds=Object.keys(days).filter(d=>days[d].main).sort();let b=0,r=0;ds.forEach((d,i)=>{r=i&&Math.round((Date.parse(d)-Date.parse(ds[i-1]))/864e5)===1?r+1:1;b=Math.max(b,r)});return b})()}}
+      best:eStats().best,secrets:found.size,...(store.get("pokecatch:collsum")||{}),streak:(()=>{const ds=Object.keys(days).filter(d=>days[d].main).sort();let b=0,r=0;ds.forEach((d,i)=>{r=i&&Math.round((Date.parse(d)-Date.parse(ds[i-1]))/864e5)===1?r+1:1;b=Math.max(b,r)});return b})()}}
   const prog=(m,st)=>{const [c,g]=m[3](st);return [Math.min(c,g),g]};
   const earned=st=>C.miles.filter(m=>{const [c,g]=prog(m,st);return c>=g}).map(m=>m[0]);
   // Read saved state (again after the Discord Activity merges in progress from other devices).
@@ -1031,6 +1031,12 @@ const ACH=makeAch({pfx:"pokecatch",dayRe:/^pokecatch1:(\d{4}-\d{2}-\d{2}):(main|
    ["s25","Unstoppable","Reach a 25-question streak in Endless",s=>[s.best,25]],
    ["w7","Steady Trainer","Play the Daily Catch 7 days in a row",s=>[s.streak,7]],
    ["w30","Dedicated Trainer","Play the Daily Catch 30 days in a row",s=>[s.streak,30]],
+   ["dex100","Rookie Researcher","Catch 100 different Pokémon",s=>[s.caught||0,100]],
+   ["dex500","Field Researcher","Catch 500 different Pokémon",s=>[s.caught||0,500]],
+   ["region","Regional Researcher","Catch every Pokémon from one region",s=>[s.regionDone||0,1]],
+   ["regionm","Regional Master","Master every Pokémon from one region",s=>[s.regionMaster||0,1]],
+   ["badges","Full Badge Case","Earn all 8 badges",s=>[s.badges||0,8]],
+   ["dexall","Gotta Catch 'Em All","Catch every Pokémon in the Pokédex",s=>[s.caught||0,s.total||1025]],
    ["hunter","Secret Hunter","Find every secret",s=>[s.secrets,EGGS.length]]]});
 window.gameAch=ACH;
 const secret=id=>ACH.secret(id);
@@ -1392,6 +1398,145 @@ body.pk-rainy .pk-night{filter:brightness(.82) saturate(.8)}
  },true);
  window.__rainDance=rainDance;
 }
+/* ===== Pokédex and Badge Case =====
+   Answer a question about a Pokémon right and it's caught in your Pokédex; get it wrong and it's only seen.
+   A catch in a Daily set (the Daily Catch or a By Difficulty daily) counts double and earns a star on the entry.
+   Questions that aren't about one Pokémon fill the Badge Case instead: 8 original badges, one per topic. */
+{const DX=(DATA.dex||[]),N=DX.length,DKEY="pokecatch:dex",BKEY="pokecatch:badgepts";
+ const REG=(DATA.groups||[]).filter(g=>/^G\d+$/.test(g.id)).sort((a,b)=>+a.id.slice(1)-+b.id.slice(1)).map(g=>g.sub);
+ const TC={normal:"#A8A77A",fire:"#EE8130",water:"#6390F0",electric:"#F7D02C",grass:"#7AC74C",ice:"#96D9D6",fighting:"#C22E28",poison:"#A33EA1",ground:"#E2BF65",
+   flying:"#A98FF3",psychic:"#F95587",bug:"#A6B91A",rock:"#B6A136",ghost:"#735797",dragon:"#6F35FC",dark:"#705746",steel:"#B7B7CE",fairy:"#D685AD"};
+ const MASTER=5;  // catch points for a mastered (gold) entry
+ // badge: [id, name, topic groups, colors, icon path (24x24)]
+ const BADGES=[
+  ["type","Type Badge",["TYPES"],["#ee8130","#6390f0","#7ac74c"],'<circle cx="12" cy="12" r="9" fill="var(--b1)"/><path d="M12 3a9 9 0 0 1 7.8 13.5L12 12Z" fill="var(--b2)"/><path d="M19.8 16.5A9 9 0 0 1 4.2 16.5L12 12Z" fill="var(--b3)"/><circle cx="12" cy="12" r="3" fill="#fff"/>'],
+  ["town","Town Badge",["TOWNS"],["#5aa0ee","#ffcb05"],'<path d="M4 12L12 4l8 8v8H4z" fill="var(--b1)"/><rect x="10" y="14" width="4" height="6" fill="var(--b2)"/><rect x="6" y="12" width="3" height="3" fill="#fff"/><rect x="15" y="12" width="3" height="3" fill="#fff"/>'],
+  ["league","League Badge",["GYMS","LEAGUE"],["#e0331e","#ffcb05"],'<path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z" fill="var(--b1)"/><path d="M12 6l1.8 3.7 4 .6-2.9 2.8.7 4L12 15.2l-3.6 1.9.7-4-2.9-2.8 4-.6z" fill="var(--b2)"/>'],
+  ["prof","Professor Badge",["PROFS"],["#7ac74c","#fffbe0"],'<path d="M9 3h6v5l5 10a2 2 0 0 1-1.8 3H5.8A2 2 0 0 1 4 18l5-10z" fill="var(--b1)"/><path d="M6.5 15h11l1.5 3a1 1 0 0 1-.9 1.5H5.9A1 1 0 0 1 5 18z" fill="var(--b2)"/><circle cx="11" cy="12" r="1.2" fill="#fff"/>'],
+  ["rival","Rival Badge",["CHARS","TEAMS"],["#8a3fd1","#ffcb05"],'<path d="M13 2L5 13h6l-2 9 10-12h-6z" fill="var(--b2)" stroke="var(--b1)" stroke-width="1.5" stroke-linejoin="round"/>'],
+  ["screen","Screen Badge",["ANIME","MOVIES","MANGA"],["#2a3a80","#f95587"],'<rect x="3" y="5" width="18" height="14" rx="2" fill="var(--b1)"/><path d="M10 9l5 3-5 3z" fill="var(--b2)"/><rect x="3" y="5" width="2" height="14" fill="#fff" opacity=".35"/><rect x="19" y="5" width="2" height="14" fill="#fff" opacity=".35"/>'],
+  ["music","Music Badge",["MUSIC"],["#f95587","#fffbe0"],'<circle cx="12" cy="12" r="10" fill="var(--b1)"/><path d="M10 6h6v3h-4v7.5A2.5 2.5 0 1 1 10 14z" fill="var(--b2)"/>'],
+  ["trainer","Trainer Badge",["BASICS","NATURES"],["#ffcb05","#e0331e"],'<path d="M12 2l2.6 6.4 6.9.4-5.3 4.4 1.7 6.7L12 16.2l-5.9 3.7 1.7-6.7-5.3-4.4 6.9-.4z" fill="var(--b1)"/><circle cx="12" cy="11.5" r="2.6" fill="var(--b2)"/>']];
+ const EARN=10,GOLD=30;
+ const TOPIC={};BADGES.forEach((b,i)=>b[2].forEach(g=>TOPIC[g]=i));
+ let dex=store.get(DKEY)||{},pts=store.get(BKEY)||{},shinyNow=false;
+ // a small summary the achievements (and the Discord bot) read
+ const summary=()=>{const caught=Object.values(dex).filter(e=>e[0]>0).length;let regionDone=0,regionMaster=0;
+   REG.forEach((_,g)=>{let t=0,c=0,m=0;DX.forEach((d,k)=>{if(d[3]===g+1){t++;const e=dex[k+1];if(e&&e[0]>0)c++;if(e&&e[0]>=MASTER)m++}});if(t&&c===t)regionDone++;if(t&&m===t)regionMaster++});
+   const badges=BADGES.filter((_,i)=>bpts(i)>=EARN).length;return {caught,regionDone,regionMaster,badges,total:N}};
+ const save=()=>{store.set(DKEY,dex);store.set(BKEY,pts);store.set("pokecatch:collsum",summary());window.gameAch&&gameAch.check()};
+ const ent=n=>dex[n]||(dex[n]=[0,0,0,""]);
+ const caught=n=>dex[n]&&dex[n][0]>0,seen=n=>!!dex[n];
+ const bpts=i=>{let s=0;for(const id in pts){const q=QBYID[id];if(q&&TOPIC[q.era]===i)s+=pts[id]}return s};
+ const today=()=>dayKey;
+ function record(q,ok,daily,quiet){if(!q)return null;const full=QBYID[q.id];if(full&&!q.n&&full.n)q={...q,n:full.n};if(full&&!q.era)q={...q,era:full.era};
+   if(q.n&&q.n<=N){const e=ent(q.n),was=e[0]>0,wasM=e[0]>=MASTER;
+     if(ok){e[0]+=daily?2:1;if(daily)e[1]=1;if(shinyNow)e[2]=1;if(!e[3])e[3]=today()}
+     return {kind:"mon",n:q.n,ok,isNew:ok&&!was,mastered:ok&&!wasM&&e[0]>=MASTER,firstSeen:!was&&!ok}}
+   const i=TOPIC[q.era];if(i==null||!ok)return null;
+   const before=bpts(i),p=daily?2:1;if((pts[q.id]||0)>=p)return null;pts[q.id]=p;const after=bpts(i);
+   return {kind:"badge",i,earned:before<EARN&&after>=EARN,gold:before<GOLD&&after>=GOLD,after}}
+ const num=n=>"#"+String(n).padStart(4,"0");
+ // a short, non-blocking note after each answer
+ let tEl=null,tT=0;
+ function note(r){if(!r)return;let msg="";
+   if(r.kind==="mon"){const nm=DX[r.n-1][0];
+     if(r.isNew)msg=`<b>New!</b> ${num(r.n)} ${esc(nm)} was registered to your Pokédex.`;
+     else if(r.mastered)msg=`<b>Mastered!</b> ${num(r.n)} ${esc(nm)} shines gold in your Pokédex.`;
+     else if(r.firstSeen)msg=`${num(r.n)} ${esc(nm)} was seen. Catch it next time!`;
+     else return}
+   else{const b=BADGES[r.i];
+     if(r.earned){window.SND&&SND.play("badge");say(`${b[1]} earned!`,`You caught ${EARN} ${b[1].replace(" Badge","").toLowerCase()} questions. It's in your Badge Case now.`);return}
+     if(r.gold){window.SND&&SND.play("badge");say(`Gold ${b[1]}!`,`Your ${b[1]} turned gold. That's ${GOLD} points of ${b[1].replace(" Badge","").toLowerCase()} questions.`);return}
+     return}
+   if(tEl)tEl.remove();clearTimeout(tT);tEl=document.createElement("div");tEl.className="dex-note";tEl.innerHTML=msg;document.body.appendChild(tEl);
+   window.SND&&SND.play(r.mastered?"dexMaster":r.isNew?"dexNew":"dexSeen");
+   requestAnimationFrame(()=>tEl.classList.add("on"));tT=setTimeout(()=>{const t=tEl;if(t){t.classList.remove("on");setTimeout(()=>t.remove(),400)}},3200)}
+ // hook every answer: sets (Daily, By Difficulty, Who's That, Generations & Topics) and Endless
+ const _a=answer;answer=function(btn){const q=S&&S.qs&&S.qs[S.i],daily=S&&(S.mode==="main"||S.mode==="daily");_a(btn);
+   if(q){const r=record(q,btn.dataset.o===q.a,daily);save();shinyNow=false;note(r)}};
+ const _ea=endlessAnswer;endlessAnswer=function(btn){const q=S&&S.cur;_ea(btn);if(q){const r=record(q,btn.dataset.o===q.a,false);save();shinyNow=false;note(r)}};
+ const _sf=shinyFoe;shinyFoe=function(){_sf();shinyNow=true};
+ // first time: add everything caught in past Daily sets
+ if(!store.get("pokecatch:dexfill")){try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);
+     if(!/^pokecatch1:\d{4}-\d{2}-\d{2}:[a-z]+$/.test(k||""))continue;const v=JSON.parse(localStorage.getItem(k));
+     if(v&&Array.isArray(v.ids))v.ids.forEach((id,j)=>{const q=QBYID[id];if(!q)return;const ok=!!(v.marks&&v.marks[j]);record(q,ok,true,true);
+       if(q.n&&ok){const e=dex[q.n],d=k.split(":")[1];if(e&&(!e[3]||e[3]===dayKey||d<e[3]))e[3]=d}})}}catch(e){}
+   store.set("pokecatch:dexfill",1);save()}
+ store.set("pokecatch:collsum",summary());
+
+ const css=document.createElement("style");css.textContent=`
+.dex-note{position:fixed;left:50%;bottom:18px;z-index:1200;transform:translate(-50%,30px);opacity:0;transition:transform .3s,opacity .3s;max-width:92vw;
+  background:#fffdf3;color:#1d2440;border:3px solid #1d2a4d;border-radius:10px;padding:9px 14px;font:600 15px/1.3 var(--px,system-ui);box-shadow:0 6px 0 rgba(0,0,0,.18)}
+.dex-note.on{transform:translate(-50%,0);opacity:1}.dex-note b{color:#c0281c}
+.dex-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.dex-count{font:600 15px var(--px,system-ui);color:var(--ink2,#52607a)}
+.dex-bar{height:12px;border-radius:6px;background:#e4e8f2;overflow:hidden;margin:8px 0 14px;border:2px solid #1d2a4d}.dex-bar span{display:block;height:100%;background:linear-gradient(90deg,#e0331e,#ffcb05)}
+.dex-regs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.dex-regs button{font:600 14px var(--px,system-ui);border:2px solid #1d2a4d;background:#fff;border-radius:8px;padding:5px 9px;cursor:pointer;color:#1d2a4d}
+.dex-regs button[aria-pressed=true]{background:#1d2a4d;color:#fff}.dex-regs small{opacity:.7;margin-left:4px}
+.dex-find{width:100%;font:600 15px var(--px,system-ui);padding:8px 10px;border:2px solid #1d2a4d;border-radius:8px;margin-bottom:12px}
+.dex-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+.dex-e{position:relative;border:2px solid #cfd5e3;border-radius:10px;background:#f6f7fb;padding:6px 6px 7px;text-align:center;cursor:pointer;font:inherit;color:#1d2440}
+.dex-e .no{font:600 12px var(--px,system-ui);color:#7a849c}.dex-e .nm{font:600 14px var(--px,system-ui);line-height:1.15;min-height:2.3em;display:flex;align-items:center;justify-content:center}
+.dex-e .sp{width:40px;height:40px;margin:2px auto 0}.dex-e.unk .sp{opacity:.18;filter:grayscale(1)}.dex-e.unk .nm{color:#9aa3b8}
+.dex-e.seen .sp{filter:grayscale(1) brightness(.6);opacity:.55}.dex-e.seen .nm{color:#7a849c}
+.dex-e.got{background:#fff;border-color:#1d2a4d}.dex-e.gold{border-color:#d4a514;background:linear-gradient(180deg,#fff8d6,#fff);box-shadow:0 0 0 2px #ffe27a inset}
+.dex-e .tags{position:absolute;top:4px;right:6px;font-size:13px;letter-spacing:1px}.dex-e .tags .st{color:#e0a92a}.dex-e .tags .sh{color:#e0331e}
+.dex-tt{display:flex;gap:4px;justify-content:center;margin-top:3px}.dex-tt i{font:normal 600 10px var(--px,system-ui);color:#fff;border-radius:4px;padding:1px 5px;text-transform:capitalize}
+.dex-key{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:#52607a;margin:4px 0 12px}
+.dex-case{background:linear-gradient(180deg,#1d2a5a,#13204a);border:3px solid #0b1640;border-radius:14px;padding:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:6px 0 18px}
+.dex-b{text-align:center;color:#fff;font:600 13px/1.2 var(--px,system-ui);background:none;border:0;padding:0;cursor:default}
+.dex-b .slot{width:64px;height:64px;margin:0 auto 5px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.08);box-shadow:inset 0 3px 6px rgba(0,0,0,.45)}
+.dex-b svg{width:44px;height:44px}.dex-b.off svg{filter:grayscale(1) brightness(.45);opacity:.6}
+.dex-b.gold .slot{background:radial-gradient(circle,#fff3b0,#e0a92a 70%);box-shadow:0 0 12px rgba(255,214,90,.7)}
+.dex-b .pr{display:block;font-size:11px;opacity:.75;margin-top:2px}
+@media (max-width:480px){.dex-case{grid-template-columns:repeat(4,1fr);gap:6px;padding:10px}.dex-b .slot{width:52px;height:52px}.dex-b svg{width:36px;height:36px}.dex-b{font-size:11px}.dex-grid{grid-template-columns:repeat(auto-fill,minmax(92px,1fr))}}
+.dex-pop{position:fixed;inset:0;z-index:1300;background:rgba(10,16,40,.55);display:grid;place-items:center;padding:16px}
+.dex-card{background:#fffdf3;border:4px solid #1d2a4d;border-radius:14px;max-width:340px;width:100%;padding:16px 18px;text-align:center;color:#1d2440}
+.dex-card .sp{width:96px;height:96px;margin:4px auto}.dex-card h3{margin:2px 0;font:400 24px 'Lilita One',var(--px,system-ui)}
+.dex-card p{margin:6px 0;font-size:15px}.dex-card .btn{margin-top:10px}
+/* tabs: play modes, then the other three, then the collection and achievements */
+#tab-seasons,#tab-where,#tab-bank{grid-column:span 4}#tab-dex,#tab-ach{grid-column:span 6;font-size:15px}#tab-dex{order:7}#tab-ach{order:8}
+@media (max-width:600px){#tab-dex{grid-column:span 1!important}#tab-ach{grid-column:span 1!important}#tab-bank{grid-column:1/-1!important}}`;document.head.appendChild(css);
+
+ const typeChips=t=>t.split("/").map(x=>`<i style="background:${TC[x]||"#888"}">${x}</i>`).join("");
+ let reg=0,find="";
+ function render(){
+   const total=Object.values(dex).filter(e=>e[0]>0).length,seenN=Object.keys(dex).length;
+   const byReg=REG.map((_,g)=>{let c=0,t=0;DX.forEach((d,k)=>{if(d[3]===g+1){t++;if(caught(k+1))c++}});return [c,t]});
+   const list=[];DX.forEach((d,k)=>{const n=k+1;if(find?(seen(n)&&d[0].toLowerCase().includes(find)||String(n)===find):d[3]===reg+1)list.push(n)});
+   app.innerHTML=`<div class="panel" id="dex-root">
+    <div class="dex-top"><h2 style="margin:0">Pokédex</h2><span class="dex-count">Caught ${total} · Seen ${seenN} · ${N}</span></div>
+    <div class="dex-bar" aria-label="${total} of ${N} caught"><span style="width:${100*total/N}%"></span></div>
+    <p style="margin:0 0 10px">Answer a question about a Pokémon right to catch it. Miss it and it's only seen. Catches in a Daily set count double and earn a <b style="color:#e0a92a">★</b>.</p>
+    <h3 class="ach-h" style="margin-top:4px">Badge Case <small>${BADGES.filter((_,i)=>bpts(i)>=EARN).length}/${BADGES.length}</small></h3>
+    <div class="dex-case">${BADGES.map((b,i)=>{const p=bpts(i),on=p>=EARN,gold=p>=GOLD;
+      return `<div class="dex-b ${on?"":"off"} ${gold?"gold":""}" title="${esc(b[1])}"><div class="slot"><svg viewBox="0 0 24 24" style="--b1:${b[3][0]};--b2:${b[3][1]};--b3:${b[3][2]||b[3][1]}">${b[4]}</svg></div>${esc(b[1].replace(" Badge",""))}<span class="pr">${on?(gold?"Gold":`${Math.min(p,GOLD)}/${GOLD} for gold`):`${p}/${EARN}`}</span></div>`}).join("")}</div>
+    <h3 class="ach-h">Pokémon</h3>
+    <input class="dex-find" type="search" placeholder="Find a Pokémon you've seen, or a number" value="${esc(find)}" aria-label="Search your Pokédex">
+    ${find?"":`<div class="dex-regs">${REG.map((r,g)=>`<button data-g="${g}" aria-pressed="${g===reg}">${r}<small>${byReg[g][0]}/${byReg[g][1]}</small></button>`).join("")}</div>`}
+    <div class="dex-key"><span><b style="color:#e0a92a">★</b> caught in a Daily</span><span><b style="color:#e0331e">✦</b> caught as a shiny</span><span style="color:#b8860b">Gold: mastered (${MASTER}+ catch points)</span></div>
+    <div class="dex-grid">${list.map(n=>{const d=DX[n-1],e=dex[n],g=e&&e[0]>0,s=!!e,m=g&&e[0]>=MASTER,col=TC[d[2].split("/")[0]]||"#5b8f5a";
+      return `<button class="dex-e ${g?"got":s?"seen":"unk"} ${m?"gold":""}" data-n="${n}" aria-label="${num(n)} ${s?esc(d[0]):"unknown"}"><span class="tags">${g&&e[1]?'<span class="st">★</span>':""}${g&&e[2]?'<span class="sh">✦</span>':""}</span>
+       <div class="no">${num(n)}</div><div class="sp">${sprite(g?(e[2]?"#e0a92a":col):"#5b6380")}</div><div class="nm">${s?esc(d[0]):"???"}</div>${g?`<div class="dex-tt">${typeChips(d[2])}</div>`:""}</button>`}).join("")||`<p>No Pokémon you've seen match that yet.</p>`}</div></div>`;
+   app.querySelectorAll(".dex-regs button").forEach(b=>b.onclick=()=>{reg=+b.dataset.g;render()});
+   const f=app.querySelector(".dex-find");f.oninput=()=>{find=f.value.trim().toLowerCase();const pos=f.selectionStart;render();const g=app.querySelector(".dex-find");g.focus();g.setSelectionRange(pos,pos)};
+   app.querySelectorAll(".dex-e").forEach(b=>b.onclick=()=>card(+b.dataset.n));
+ }
+ function card(n){const d=DX[n-1],e=dex[n],g=e&&e[0]>0,s=!!e,col=TC[d[2].split("/")[0]]||"#5b8f5a";
+   const o=document.createElement("div");o.className="dex-pop";
+   o.innerHTML=`<div class="dex-card" role="dialog" aria-label="${num(n)}"><div style="font:600 14px var(--px,system-ui);color:#7a849c">${num(n)} · ${REG[d[3]-1]}</div>
+    <div class="sp">${sprite(g?(e[2]?"#e0a92a":col):"#5b6380")}</div><h3>${s?esc(d[0]):"???"}</h3>
+    ${g?`<div class="dex-tt" style="margin:6px 0">${typeChips(d[2])}</div><p>The ${esc(d[1])}.</p><p>${e[0]} catch point${e[0]>1?"s":""}${e[0]<MASTER?` (${MASTER} to master)`:" · Mastered"}${e[1]?" · ★ Daily catch":""}${e[2]?" · ✦ Shiny":""}</p>${e[3]?`<p style="font-size:13px;color:#7a849c">First caught ${esc(e[3])}</p>`:""}`
+      :s?`<p>Seen, but it broke free. Catch it by answering a question about it right.</p>`:`<p>Not seen yet. Keep playing to find it, or try Endless for more chances.</p>`}
+    <button class="btn" type="button">Close</button></div>`;
+   document.body.appendChild(o);const close=()=>o.remove();o.onclick=ev=>{if(ev.target===o)close()};o.querySelector(".btn").onclick=close}
+ const tab=document.createElement("button");tab.className="tab";tab.setAttribute("role","tab");tab.id="tab-dex";tab.dataset.v="dex";tab.textContent="Pokédex";
+ const achT=document.getElementById("tab-ach");achT?achT.before(tab):document.querySelector(".tabs").appendChild(tab);
+ tab.onclick=()=>{S=null;document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",String(b===tab)));find="";render();scrollTo({top:0})};
+ window.__dex={record,dex:()=>dex,pts:()=>pts,render};
+}
 /* Poké Catch: a mysterious shadow crosses the full moon, and tapping the sun makes the sunlight harsh (Sunny Day) */
 {const css=document.createElement("style");css.textContent=`
 :root{--ys-bg:#fffaf0;--ys-border:3px solid #2b2f55;--ys-r:12px;--ys-ink:#1b1f3b;--ys-h:400 20px/1.1 "Lilita One",sans-serif;--ys-num:400 28px/1 "Lilita One",sans-serif;--ys-track:#efe6d2;--ys-bar:#7f8fd0;--ys-acc:#ffcb05}
@@ -1597,6 +1742,11 @@ D.rain=()=>{noise({dur:3,vol:.12,type:"highpass",freq:3500,att:.8});[0,.3,.7,1.1
 D.berry=()=>{[0,.12,.22,.3].forEach((t,k)=>tone({t,n:76-k*2,type:"pulse12",dur:.06,vol:.08}))};
 D.cap=()=>{[72,76,79,84].forEach((n,k)=>tone({t:k*.07,n,type:"pulse",dur:.08,vol:.08}))};
 D.fireflies=()=>{for(let k=0;k<12;k++)tone({t:k*.09,n:84+[0,4,7,11,12,16][k%6],type:"sine",dur:.3,vol:.05})};
+// collection: the Pokédex and Badge Case
+D.dexNew=()=>{[[72,0],[76,.08],[79,.16],[84,.26]].forEach(([n,t])=>tone({t,n,type:"pulse",dur:.1,vol:.08}));tone({t:.26,n:88,type:"pulse12",dur:.3,vol:.06});tone({t:0,n:48,type:"triangle",dur:.4,vol:.12})};
+D.dexSeen=()=>{tone({n:76,type:"pulse12",dur:.06,vol:.05});tone({t:.07,n:71,type:"pulse12",dur:.08,vol:.04})};
+D.dexMaster=()=>{[79,83,86,91,95,98].forEach((n,k)=>tone({t:k*.06,n,type:"pulse",dur:.12,vol:.07}));tone({t:.36,n:103,type:"triangle",dur:.5,vol:.05})};
+D.badge=()=>{[[67,0,.14],[67,.15,.08],[67,.24,.08],[72,.33,.5]].forEach(([n,t,d])=>{tone({t,n,type:"pulse",dur:d,vol:.08});tone({t,n:n-12,type:"triangle",dur:d,vol:.12})});[76,79].forEach(n=>tone({t:.33,n,type:"pulse12",dur:.5,vol:.05}))};
 D.flee=()=>{[0,.07,.14,.21].forEach((t,k)=>noise({t,dur:.04,vol:.18,type:"bandpass",freq:900+k*150,q:4}));[[.32,79],[.4,76],[.48,72],[.56,67]].forEach(([t,n])=>tone({t,n,type:"pulse",dur:.07,vol:.1}));noise({t:.3,dur:.35,vol:.08,type:"bandpass",freq:3000,sweep:600,q:1.5})};
 
 /* ---- music: a small step sequencer that plans a little ahead, and skips late notes rather than cramming them in ---- */
