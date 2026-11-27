@@ -544,13 +544,13 @@ function syncView(){
     navigator.clipboard.writeText(code).then(()=>t.textContent="Copied").catch(()=>{const el=document.getElementById("sync-code");el.focus();el.select();t.textContent="Selected; press Ctrl/Cmd+C"})};
   document.getElementById("sync-load").onclick=()=>{const t=document.getElementById("sync-t2");
     try{const o=JSON.parse(decodeURIComponent(escape(atob(document.getElementById("sync-paste").value.trim()))));
-      if(!o||!o.d)throw 0;let added=0;
+      if(!o||!o.d)throw 0;let added=0;const PF="pokecatch:",MG={secrets:"u",ach:"u",eggcounts:"m",locker:"m",badgepts:"m",dex:"d"};
       for(const [k,v] of Object.entries(o.d)){if(!k.startsWith("pokecatch"))continue;const cur=localStorage.getItem(k);
         if(k===EKEY){const a=JSON.parse(cur||"{}"),b=JSON.parse(v||"{}");
           const m={best:Math.max(a.best||0,b.best||0),...((b.total||0)>(a.total||0)?{right:b.right||0,total:b.total||0}:{right:a.right||0,total:a.total||0})};
           localStorage.setItem(k,JSON.stringify(m));added++;continue}
-        if(cur===null){localStorage.setItem(k,v);added++}}
-      t.textContent=added?"Progress loaded":"Nothing new to add";
+        if(k.startsWith(PF)){const tp=k.slice(PF.length);if(tp==="lockerfill"||tp==="dexfill"||tp==="dexfill2"||tp==="lockerfill2"||tp==="collsum")continue;const how=MG[tp];if(how&&cur!==null){let a,b;try{a=JSON.parse(cur);b=JSON.parse(v)}catch(e){continue}let m;if(how==="u")m=[...new Set([...(Array.isArray(a)?a:[]),...(Array.isArray(b)?b:[])])];else{m=Object.assign({},a||{});for(const x in (b||{})){const p=m[x],q=b[x];if(how==="m")m[x]=Math.max(+p||0,+q||0);else m[x]=Array.isArray(p)&&Array.isArray(q)?[Math.max(p[0]||0,q[0]||0),Math.max(p[1]||0,q[1]||0),Math.max(p[2]||0,q[2]||0),[p[3],q[3]].filter(Boolean).sort()[0]||""]:(p||q)}}const js=JSON.stringify(m);if(js!==cur){localStorage.setItem(k,js);added++}continue}}if(cur===null){localStorage.setItem(k,v);added++}}
+      if(added){localStorage.removeItem(PF+"lockerfill2");localStorage.removeItem(PF+"dexfill2");t.textContent="Progress loaded, refreshing…";setTimeout(()=>location.reload(),900)}else t.textContent="Nothing new to add";
     }catch(e){t.textContent="That code didn't work"}};
   document.getElementById("sync-back").onclick=()=>setView(view||"main");
   window.scrollTo({top:0});
@@ -1031,7 +1031,7 @@ function next(){clearTimeout(dTimer);const m=queue.shift();if(!m)return;
   if(R)finish();else tm=setInterval(()=>{vis.textContent=m[1].slice(0,++i);if(i%2===0)window.SND&&SND.play("type");if(i>=m[1].length)finish()},22);
   const close=()=>{if(dEl!==d)return;d.classList.add("out");setTimeout(()=>d.remove(),200);dEl=null;next()};
   d.onclick=e=>{if(e.target.closest("a"))return;if(tm)finish();else close()};dTimer=setTimeout(close,9000)}
-const fact=()=>{const pool=Q.filter(q=>(q.t==="e"||q.t==="m")&&!q.clue&&q.q.length<120&&!/these|this one/i.test(q.q)),q=pool[Math.random()*pool.length|0];
+const fact=()=>{const pool=Q.filter(q=>(q.t==="e"||q.t==="m")&&!q.clue&&q.q.length<120&&!/these|this one/i.test(q.q)),q=pool[Math.random()*pool.length|0];window.__lastFact=q;
   return [`${q.q} ${q.a}.`,`<span class="src">${srcLink(q.s)}</span>`]};
 const playing=()=>!!app.querySelector(".opt");
 
@@ -1084,7 +1084,7 @@ function encounter(x){
     if(!R){b.animate([{transform:getComputedStyle(b).transform+" scale(1)",filter:"brightness(1)"},{transform:getComputedStyle(b).transform+" scale(0)",filter:"brightness(3)"}],{duration:300,fill:"forwards"});
       setTimeout(()=>{[0,380,760].forEach(d=>setTimeout(()=>window.SND&&SND.play("wobble"),d));document.body.appendChild(o);o.animate([{transform:"rotate(0)"},{transform:"rotate(-24deg)"},{transform:"rotate(24deg)"},{transform:"rotate(0)"}],{duration:380,iterations:3}).onfinish=()=>{sparkle(r.left+23,r.top+23,4);setTimeout(()=>o.remove(),300)}},300)}
     setTimeout(()=>{window.SND&&SND.play("correct");b.remove();if(mon===b)mon=null;const [t,src]=fact();
-      say(shiny?"Gotcha! A shiny!":"Gotcha!",`${shiny?"The shiny":"The wild"} question had a fact: ${t}`,src);secret("grass");if(shiny)secret("shiny")},R?0:1600)};
+      say(shiny?"Gotcha! A shiny!":"Gotcha!",`${shiny?"The shiny":"The wild"} question had a fact: ${t}`,src);secret("grass");if(shiny)secret("shiny");const fq=window.__lastFact;setTimeout(()=>window.__dex&&window.__dex.collect(fq,shiny),1200)},R?0:1600)};
 }
 /* occasional wanderer when you're not mid-question */
 function wander(){if(!playing()&&!document.hidden)encounter(Math.random()<.5?20:innerWidth-20);setTimeout(wander,45000+Math.random()*30000)}
@@ -1478,11 +1478,12 @@ body.pk-rainy .pk-night{filter:brightness(.82) saturate(.8)}
  const _ea=endlessAnswer;endlessAnswer=function(btn){const q=S&&S.cur;_ea(btn);if(q){const r=record(q,btn.dataset.o===q.a,false);save();shinyNow=false;note(r)}};
  const _sf=shinyFoe;shinyFoe=function(){_sf();shinyNow=true};
  // first time: add everything caught in past Daily sets
- if(!store.get("pokecatch:dexfill")){try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);
+ if(!store.get("pokecatch:dexfill2")){const keep=dex;dex={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);
      if(!/^pokecatch1:\d{4}-\d{2}-\d{2}:[a-z]+$/.test(k||""))continue;const v=JSON.parse(localStorage.getItem(k));
      if(v&&Array.isArray(v.ids))v.ids.forEach((id,j)=>{const q=QBYID[id];if(!q)return;const ok=!!(v.marks&&v.marks[j]);record(q,ok,true,true);
        if(q.n&&ok){const e=dex[q.n],d=k.split(":")[1];if(e&&(!e[3]||e[3]===dayKey||d<e[3]))e[3]=d}})}}catch(e){}
-   store.set("pokecatch:dexfill",1);save()}
+   for(const n in keep){const p=keep[n],e=dex[n];dex[n]=e?[Math.max(p[0]||0,e[0]||0),Math.max(p[1]||0,e[1]||0),Math.max(p[2]||0,e[2]||0),[p[3],e[3]].filter(Boolean).sort()[0]||""]:p}
+   store.set("pokecatch:dexfill2",1);save()}
  store.set("pokecatch:collsum",summary());
 
  const css=document.createElement("style");css.textContent=`
@@ -1555,7 +1556,7 @@ body.pk-rainy .pk-night{filter:brightness(.82) saturate(.8)}
  const tab=document.createElement("button");tab.className="tab";tab.setAttribute("role","tab");tab.id="tab-dex";tab.dataset.v="dex";tab.textContent="Pokédex";
  const achT=document.getElementById("tab-ach");achT?achT.before(tab):document.querySelector(".tabs").appendChild(tab);
  tab.onclick=()=>{S=null;document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",String(b===tab)));find="";render();scrollTo({top:0})};
- window.__dex={record,dex:()=>dex,pts:()=>pts,render};
+ window.__dex={collect(q,shiny){if(!q)return;shinyNow=!!shiny;const r=record(q,true,false);save();shinyNow=false;note(r)},record,dex:()=>dex,pts:()=>pts,render};
 }
 /* Poké Catch: a mysterious shadow crosses the full moon, and tapping the sun makes the sunlight harsh (Sunny Day) */
 {const css=document.createElement("style");css.textContent=`
