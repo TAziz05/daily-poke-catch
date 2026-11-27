@@ -1084,7 +1084,7 @@ let mon=null;
 function rustle(x){window.SND&&SND.play("rustle");const y=innerHeight-60;if(!R)for(let k=0;k<5;k++){const l=document.createElement("span");l.className="egg-leaf";l.style.left=(x-10+Math.random()*20)+"px";l.style.top=y+"px";document.body.appendChild(l);
   l.animate([{transform:"translate(0,0) rotate(0)"},{transform:`translate(${(Math.random()-.5)*60}px,${-30-Math.random()*40}px) rotate(${Math.random()*360}deg)`,opacity:0}],{duration:600}).onfinish=()=>l.remove()}}
 function encounter(x){
-  if(mon)return;const shiny=Math.random()<1/12;
+  if(mon)return;const shiny=Math.random()<1/24;
   const b=document.createElement("button");b.type="button";b.className="egg-mon";b.setAttribute("aria-label",shiny?"A shiny wild question. Tap to catch":"A wild question. Tap to catch");
   b.innerHTML=sprite(shiny?"#e0a92a":"#5b8f5a");b.style.left=Math.max(4,Math.min(innerWidth-52,x-23))+"px";document.body.appendChild(b);mon=b;window.SND&&SND.play(shiny?"shiny":"wild");
   const dir=x<innerWidth/2?1:-1,dist=dir*(innerWidth*.5);
@@ -1099,8 +1099,8 @@ function encounter(x){
       say(shiny?"Gotcha! A shiny!":"Gotcha!",`${shiny?"The shiny":"The wild"} question had a fact: ${t}`,src);secret("grass");if(shiny)secret("shiny");const fq=window.__lastFact;setTimeout(()=>window.__dex&&window.__dex.collect(fq,shiny),1200)},R?0:1600)};
 }
 /* occasional wanderer when you're not mid-question */
-function wander(){if(!playing()&&!document.hidden)encounter(Math.random()<.5?20:innerWidth-20);setTimeout(wander,45000+Math.random()*30000)}
-setTimeout(wander,12000);
+function wander(){if(!playing()&&!document.hidden)encounter(Math.random()<.5?20:innerWidth-20);setTimeout(wander,100000+Math.random()*60000)}
+setTimeout(wander,30000);
 
 /* no wild questions in the grass during a game: one that's running away is cleared when a question starts */
 function hideMon(){if(mon&&!mon.disabled)hideInGrass(mon)}
@@ -1125,7 +1125,7 @@ document.addEventListener("click",e=>{
   if(e.target.closest("button,a,input,select,textarea,label,.panel,.tabs,.egg-dlg,.emblem,#date"))return;
   const moon=document.querySelector(".pk-moon").getBoundingClientRect();
   if((!window.SKY||SKY.isNight())&&e.clientX>=moon.left-10&&e.clientX<=moon.right+10&&e.clientY>=moon.top-10&&e.clientY<=moon.bottom+10){shootingStar();return}
-  if(e.clientY>innerHeight-96){rustle(e.clientX);if(!playing()&&(Math.random()<.35||!ACH.has("grass")&&Math.random()<.6))setTimeout(()=>encounter(e.clientX),250)}
+  if(e.clientY>innerHeight-96){rustle(e.clientX);if(!playing()&&(Math.random()<.18||!ACH.has("grass")&&Math.random()<.5))setTimeout(()=>encounter(e.clientX),250)}
 });
 
 /* 3. shooting star */
@@ -1474,7 +1474,7 @@ body.pk-rainy .pk-night{filter:brightness(.82) saturate(.8)}
  function note(r){if(!r)return;let msg="";
    if(r.kind==="mon"){const nm=DX[r.n-1][0];
      if(r.isNew)msg=`<b>New!</b> ${num(r.n)} ${esc(nm)} was registered to your Pokédex.`;
-     else if(r.mastered)msg=`<b>Mastered!</b> ${num(r.n)} ${esc(nm)} shines gold in your Pokédex.`;
+     else if(r.mastered)msg=`<svg class="dex-candy" viewBox="0 0 30 16" aria-hidden="true"><path d="M2 3l7 5-7 5z" fill="#8fd0ff" stroke="#1d2a4d" stroke-width="1.4" stroke-linejoin="round"/><path d="M28 3l-7 5 7 5z" fill="#8fd0ff" stroke="#1d2a4d" stroke-width="1.4" stroke-linejoin="round"/><ellipse cx="15" cy="8" rx="7" ry="6" fill="#5aa8f0" stroke="#1d2a4d" stroke-width="1.4"/><path d="M10 6.5c3-1.6 7-1.6 10 0" stroke="#fff" stroke-width="1.6" fill="none"/><ellipse cx="12.4" cy="5.4" rx="1.8" ry="1" fill="#fff" opacity=".7"/></svg><b>Mastered!</b> ${num(r.n)} ${esc(nm)} shines gold in your Pokédex.`;
      else if(r.firstSeen)msg=`${num(r.n)} ${esc(nm)} was seen. Catch it next time!`;
      else return}
    else{const b=BADGES[r.i];
@@ -1526,6 +1526,7 @@ body.pk-rainy .pk-night{filter:brightness(.82) saturate(.8)}
 .dex-b .pr{display:block;font-size:11px;opacity:.75;margin-top:2px}
 @media (max-width:480px){.dex-case{grid-template-columns:repeat(4,1fr);gap:6px;padding:10px}.dex-b .slot{width:52px;height:52px}.dex-b svg{width:36px;height:36px}.dex-b{font-size:11px}.dex-grid{grid-template-columns:repeat(auto-fill,minmax(92px,1fr))}}
 .dex-pop{position:fixed;inset:0;z-index:1300;background:rgba(10,16,40,.55);display:grid;place-items:center;padding:16px}
+.dex-candy{width:30px;height:16px;vertical-align:-3px;margin-right:6px}
 .dex-card{background:#fffdf3;border:4px solid #1d2a4d;border-radius:14px;max-width:340px;width:100%;padding:16px 18px;text-align:center;color:#1d2440}
 .dex-card .sp{width:96px;height:96px;margin:4px auto}.dex-card h3{margin:2px 0;font:400 24px 'Lilita One',var(--px,system-ui)}
 .dex-card p{margin:6px 0;font-size:15px}.dex-weak{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;align-items:center;margin:6px 0;font-size:13px}.dex-weak b{margin-right:2px}.dex-weak i{font-style:normal;color:#fff;font-weight:700;font-size:11px;text-transform:uppercase;padding:2px 7px;border-radius:5px;text-shadow:0 1px 1px rgba(0,0,0,.35)}.dex-links{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px}.dex-links a,.dex-link{display:inline-block;font:600 14px var(--px,system-ui);color:#1d2a4d;background:#ffe57a;border:2px solid #1d2a4d;border-radius:8px;padding:6px 10px;text-decoration:none}.dex-link{margin-top:8px;font-size:13px}.dex-card .btn{margin-top:10px}
