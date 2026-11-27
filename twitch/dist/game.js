@@ -145,7 +145,7 @@ function answer(btn){
   const last=S.i===S.qs.length-1;
   document.getElementById("after").innerHTML=`<div class="explain" style="border-color:${ok?"var(--right)":"var(--wrong)"}">
     <span class="verdict" style="color:${ok?"var(--right)":"var(--wrong)"}">${ok?"Gotcha!":"Oh no! It broke free!"}</span>
-    <p>${esc(q.e)}</p><span class="src">${esc(q.id)} · Source: ${srcLink(q.s)}</span></div>
+    <p>${esc(q.e)}</p><span class="src">${esc(q.id)} · Source: ${srcLink(q.s)}</span>${window.__dexLink?window.__dexLink(q):""}</div>
     <div class="row" style="margin-top:12px"><button class="btn" id="next">${last?"See results":"Next question"}</button></div>`;
   const nb=document.getElementById("next");
   nb.onclick=()=>{if(last){if(S.mode==="daily")store.set(keyFor(S.t),{marks:S.marks,ids:S.qs.map(x=>x.id)});if(S.mode==="main")store.set(keyFor("main"),{marks:S.marks,ids:S.qs.map(x=>x.id)});if(S.mode==="main"&&window.catchDone)try{window.catchDone(S.marks,S.qs.map(x=>x.id))}catch(e){}results(true)}else{S.i++;question()}};
@@ -305,7 +305,7 @@ function endlessAnswer(btn){
   app.querySelector(".hud").outerHTML=endlessHud();
   document.getElementById("after").innerHTML=`<div class="explain" style="border-color:${ok?"var(--right)":"var(--wrong)"}">
     <span class="verdict" style="color:${ok?"var(--right)":"var(--wrong)"}">${ok?(newBest&&S.streak>1?"New best streak!":"Gotcha!"):(lost>=3?`Streak over at ${lost}.`:"Oh no! It broke free!")}</span>
-    <p>${esc(q.e)}</p><span class="src">${esc(q.id)} · Source: ${srcLink(q.s)}</span></div>
+    <p>${esc(q.e)}</p><span class="src">${esc(q.id)} · Source: ${srcLink(q.s)}</span>${window.__dexLink?window.__dexLink(q):""}</div>
     <div class="row" style="margin-top:12px"><button class="btn" id="next">Next question</button><button class="btn ghost" id="stop">Stop</button></div>`;
   const nb=document.getElementById("next");nb.onclick=endlessQ;nb.focus();
   document.getElementById("stop").onclick=endlessEnd;

@@ -556,11 +556,18 @@ body.pk-rainy .pk-night{filter:brightness(.82) saturate(.8)}
 .dex-pop{position:fixed;inset:0;z-index:1300;background:rgba(10,16,40,.55);display:grid;place-items:center;padding:16px}
 .dex-card{background:#fffdf3;border:4px solid #1d2a4d;border-radius:14px;max-width:340px;width:100%;padding:16px 18px;text-align:center;color:#1d2440}
 .dex-card .sp{width:96px;height:96px;margin:4px auto}.dex-card h3{margin:2px 0;font:400 24px 'Lilita One',var(--px,system-ui)}
-.dex-card p{margin:6px 0;font-size:15px}.dex-card .btn{margin-top:10px}
+.dex-card p{margin:6px 0;font-size:15px}.dex-weak{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;align-items:center;margin:6px 0;font-size:13px}.dex-weak b{margin-right:2px}.dex-weak i{font-style:normal;color:#fff;font-weight:700;font-size:11px;text-transform:uppercase;padding:2px 7px;border-radius:5px;text-shadow:0 1px 1px rgba(0,0,0,.35)}.dex-links{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:10px}.dex-links a,.dex-link{display:inline-block;font:600 14px var(--px,system-ui);color:#1d2a4d;background:#ffe57a;border:2px solid #1d2a4d;border-radius:8px;padding:6px 10px;text-decoration:none}.dex-link{margin-top:8px;font-size:13px}.dex-card .btn{margin-top:10px}
 /* tabs: play modes, then the other three, then the collection and achievements */
 #tab-seasons,#tab-where,#tab-bank{grid-column:span 4}#tab-dex,#tab-ach{grid-column:span 6;font-size:15px}#tab-dex{order:7}#tab-ach{order:8}
 @media (max-width:600px){#tab-dex{grid-column:span 1!important}#tab-ach{grid-column:span 1!important}#tab-bank{grid-column:1/-1!important}}`;document.head.appendChild(css);
 
+ const CHART={normal:["","rock steel","ghost"],fire:["grass ice bug steel","fire water rock dragon",""],water:["fire ground rock","water grass dragon",""],electric:["water flying","electric grass dragon","ground"],grass:["water ground rock","fire grass poison flying bug dragon steel",""],ice:["grass ground flying dragon","fire water ice steel",""],fighting:["normal ice rock dark steel","poison flying psychic bug fairy","ghost"],poison:["grass fairy","poison ground rock ghost","steel"],ground:["fire electric poison rock steel","grass bug","flying"],flying:["grass fighting bug","electric rock steel",""],psychic:["fighting poison","psychic steel","dark"],bug:["grass psychic dark","fire fighting poison flying ghost steel fairy",""],rock:["fire ice flying bug","fighting ground steel",""],ghost:["psychic ghost","dark","normal"],dragon:["dragon","steel","fairy"],dark:["psychic ghost","fighting dark fairy",""],steel:["ice rock fairy","fire water electric steel",""],fairy:["fighting dragon dark","fire poison steel",""]};
+ const mult=(atk,defs)=>defs.reduce((m,d)=>{const [s,n,z]=CHART[atk].map(x=>x.split(" "));return m*(z.includes(d)?0:s.includes(d)?2:n.includes(d)?.5:1)},1);
+ const weak=t=>{const defs=t.split("/");return Object.keys(CHART).map(a=>[a,mult(a,defs)]).filter(([,m])=>m>1)};
+ const slug=nm=>nm.normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/♀/g,"-female").replace(/♂/g,"-male").toLowerCase().replace(/[.'’:]/g,"").trim().replace(/\s+/g,"-");
+ const pdx=nm=>`https://www.pokemon.com/us/pokedex/${slug(nm)}`,bulba=nm=>`https://bulbapedia.bulbagarden.net/wiki/${encodeURIComponent(nm.replace(/ /g,"_"))}_(Pok%C3%A9mon)`;
+ const links=nm=>`<div class="dex-links"><a href="${pdx(nm)}" target="_blank" rel="noopener">See it on the Pokédex ↗</a><a href="${bulba(nm)}" target="_blank" rel="noopener">Bulbapedia ↗</a></div>`;
+ window.__dexLink=q=>{const full=QBYID[q.id]||q,n=full.n;if(!n||!DX[n-1])return"";const nm=DX[n-1][0];return `<a class="dex-link" href="${pdx(nm)}" target="_blank" rel="noopener">See ${esc(nm)} on the Pokédex ↗</a>`};
  const typeChips=t=>t.split("/").map(x=>`<i style="background:${TC[x]||"#888"}">${x}</i>`).join("");
  let reg=0,find="";
  function render(){
@@ -589,9 +596,9 @@ body.pk-rainy .pk-night{filter:brightness(.82) saturate(.8)}
    const o=document.createElement("div");o.className="dex-pop";
    o.innerHTML=`<div class="dex-card" role="dialog" aria-label="${num(n)}"><div style="font:600 14px var(--px,system-ui);color:#7a849c">${num(n)} · ${REG[d[3]-1]}</div>
     <div class="sp">${sprite(g?(e[2]?"#e0a92a":col):"#5b6380")}</div><h3>${s?esc(d[0]):"???"}</h3>
-    ${g?`<div class="dex-tt" style="margin:6px 0">${typeChips(d[2])}</div><p>The ${esc(d[1])}.</p><p>${e[0]} catch point${e[0]>1?"s":""}${e[0]<MASTER?` (${MASTER} to master)`:" · Mastered"}${e[1]?" · ★ Daily catch":""}${e[2]?" · ✦ Shiny":""}</p>${e[3]?`<p style="font-size:13px;color:#7a849c">First caught ${esc(e[3])}</p>`:""}`
+    ${g?`<div class="dex-tt" style="margin:6px 0">${typeChips(d[2])}</div><p>The ${esc(d[1])} · Generation ${d[3]}</p><div class="dex-weak"><b>Weak to</b>${weak(d[2]).map(([a,m])=>`<i style="background:${TC[a]||"#888"}">${a}${m>2?" ×4":""}</i>`).join("")}</div><p>${e[0]} catch point${e[0]>1?"s":""}${e[0]<MASTER?` (${MASTER} to master)`:" · Mastered"}${e[1]?" · ★ Daily catch":""}${e[2]?" · ✦ Shiny":""}</p>${e[3]?`<p style="font-size:13px;color:#7a849c">First caught ${esc(e[3])}</p>`:""}`
       :s?`<p>Seen, but it broke free. Catch it by answering a question about it right.</p>`:`<p>Not seen yet. Keep playing to find it, or try Endless for more chances.</p>`}
-    <button class="btn" type="button">Close</button></div>`;
+    ${s?links(d[0]):""}<button class="btn" type="button">Close</button></div>`;
    document.body.appendChild(o);const close=()=>o.remove();o.onclick=ev=>{if(ev.target===o)close()};o.querySelector(".btn").onclick=close}
  const tab=document.createElement("button");tab.className="tab";tab.setAttribute("role","tab");tab.id="tab-dex";tab.dataset.v="dex";tab.textContent="Pokédex";
  const achT=document.getElementById("tab-ach");achT?achT.before(tab):document.querySelector(".tabs").appendChild(tab);
